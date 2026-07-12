@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Warden Console - HostelHub</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="dark-theme">
+  <header class="app-header">
+    <div class="brand">🛠️ HostelHub Warden</div>
+    <div class="nav-user">
+      <div class="user-badge">
+        <div class="user-avatar" id="navAvatar" style="background:#0d9488;">W</div>
+        <div class="user-info">
+          <span class="user-name" id="navName">Warden Name</span>
+          <span class="user-role-label" id="navRole">Local Warden</span>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="dashboard-grid">
+      <!-- Active Scanning Module -->
+      <div class="card" style="grid-column: span 6;">
+        <h2 class="card-title">Mess Scanner Terminal</h2>
+        <p style="color: var(--text-staff-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+          Emulate dynamic QR tracking below. Scan student barcodes to check meal slots and prevent multiple servings.
+        </p>
+
+        <!-- Dynamic Laser Flash Visualizer -->
+        <div class="scan-visualizer" id="scanVisualizer">
+          <div class="scan-laser" id="scanLaser"></div>
+          <div style="font-size: 3rem; margin-bottom: 8px;">📷</div>
+          <div style="font-size: 0.95rem; font-weight:600; color: var(--text-staff-secondary);" id="scannerStatus">
+            Scanner Standby: Awaiting Input
+          </div>
+        </div>
+
+        <form id="scanQrForm">
+          <div class="form-group">
+            <label class="form-label" for="qrToken">Scan QR Token string</label>
+            <input class="form-input" type="text" id="qrToken" placeholder="Paste Student JSON QR Payload" required autocomplete="off">
+          </div>
+          <button class="btn-submit" type="submit" style="background:var(--staff-accent);">Validate Student Scan</button>
+        </form>
+      </div>
+
+      <!-- Real-Time Transactions & Info -->
+      <div class="card" style="grid-column: span 6; display: flex; flex-direction: column;">
+        <h2 class="card-title">Recent Portion Scans</h2>
+        <div style="flex-grow: 1; border: 1px solid var(--border-staff); border-radius: var(--radius-sm); padding: 15px; background: rgba(0,0,0,0.1);">
+          <ul class="scan-log-list" id="scanLogsContainer">
+            <li class="scan-log-item" style="color: var(--text-staff-secondary); text-align: center; justify-content: center; padding: 40px 0;">
+              No scans executed in this session.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    const token = localStorage.getItem('hostelhub_token');
+    const userType = localStorage.getItem('hostelhub_user_type');
+    let wardenProfile = {};
+
+    // Session guards
+    if (!token || userType !== 'STAFF') {
+      window.location.href = '/login/staff/';
+    }
+
+    // Dynamic toast alerts helper
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <span>${message}</span>
+        <span style="cursor:pointer;" onclick="this.parentElement.remove()">×</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4500);
+    }
+
+    // Web Audio Synthesizer Beep Sound Helper
+    function playBeep(success = true) {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        if (success) {
+          // Clean, high success chirp (880Hz / A5)
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, ctx.currentTime);
+          gainNode.gain.setValueAtTime(0.08, ctx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.25);
+        } else {
+          // Low flat error alarm buzz (140Hz / Sawtooth)
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(140, ctx.currentTime);
+          gainNode.gain.setValueAtTime(0.18, ctx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.6);
+        }
+      } catch (err) {
+        console.warn('Web Audio Context blocked or unavailable:', err);
+      }
+    }
+
+    // Parse Warden details from JWT token
+    function parseJwt(token) {
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function initConsole() {
+      const payload = parseJwt(token);
+      if (!payload || payload.role !== 'WARDEN') {
+        showToast('Warden access authorization check failed.', 'error');
+        logout();
+        return;
+      }
+
+      wardenProfile = payload;
+      document.getElementById('navName').innerText = `${payload.username.toUpperCase()} (Block ${payload.assigned_hostel})`;
+      document.getElementById('navRole').innerText = `Warden Block ${payload.assigned_hostel}`;
+      document.getElementById('navAvatar').innerText = payload.assigned_hostel;
+      
+      // Load session scan list
+      refreshScanLogs();
+    }
+
+    // Fetch recent mess scan entries from API
+    async function refreshScanLogs() {
+      // In this client view we keep it in memory or fetch recent logs from the backend if required
+      // Since it's a Warden view we can query the backend or display the current scanner session logs
+    }
+
+    const sessionScans = [];
+    const visualizer = document.getElementById('scanVisualizer');
+    const statusText = document.getElementById('scannerStatus');
+    const laser = document.getElementById('scanLaser');
+
+    document.getElementById('scanQrForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const qr_token = document.getElementById('qrToken').value.trim();
+      statusText.innerText = "Verifying Token Handshake...";
+      laser.style.background = "#eab308"; // Scanning color yellow
+
+      try {
+        const response = await fetch('/api/warden/scan-qr', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ qr_token })
+        });
+
+        const result = await response.json();
+
+        // Remove old animation states
+        visualizer.classList.remove('success-flash', 'error-flash');
+
+        if (response.ok && result.status === 'SUCCESS') {
+          // Success Feedback
+          playBeep(true);
+          visualizer.classList.add('success-flash');
+          statusText.innerText = "SCAN VERIFIED - serving granted";
+          statusText.style.color = "var(--color-success)";
+          laser.style.background = "var(--color-success)";
+          showToast(result.message, 'success');
+
+          // Log into session list
+          let parsed = {};
+          try { parsed = JSON.parse(qr_token); } catch(e) {}
+          addScanToSessionLog(parsed.student_id || 'Unknown', result.timestamp, true, result.message);
+          
+          document.getElementById('qrToken').value = ''; // clear input
+        } else {
+          // Error / Duplicate Feedback
+          playBeep(false);
+          visualizer.classList.add('error-flash');
+          statusText.innerText = "DENIED: " + (result.message || "Fraud Alert");
+          statusText.style.color = "var(--color-danger)";
+          laser.style.background = "var(--color-danger)";
+          showToast(result.message || 'Verification Error', 'error');
+
+          let parsed = {};
+          try { parsed = JSON.parse(qr_token); } catch(e) {}
+          addScanToSessionLog(parsed.student_id || 'Unknown', new Date().toISOString(), false, result.message);
+        }
+      } catch (err) {
+        playBeep(false);
+        visualizer.classList.add('error-flash');
+        statusText.innerText = "API CONNECTION FAILURE";
+        statusText.style.color = "var(--color-danger)";
+        showToast('Network error processing request.', 'error');
+        console.error(err);
+      }
+    });
+
+    function addScanToSessionLog(studentId, timestamp, isSuccess, details) {
+      const container = document.getElementById('scanLogsContainer');
+      
+      // Remove empty message if first scan
+      if (sessionScans.length === 0) {
+        container.innerHTML = '';
+      }
+
+      const scanTime = new Date(timestamp).toLocaleTimeString();
+      const dotColor = isSuccess ? 'var(--color-success)' : 'var(--color-danger)';
+      const textStyle = isSuccess ? 'color: var(--text-staff-primary);' : 'color: var(--color-danger); font-weight: 600;';
+
+      const logItem = document.createElement('li');
+      logItem.className = 'scan-log-item';
+      logItem.innerHTML = `
+        <div style="display:flex; align-items:center; gap: 10px;">
+          <span class="scan-indicator" style="background-color: ${dotColor};"></span>
+          <div style="text-align:left;">
+            <div style="${textStyle}">Student: ${studentId}</div>
+            <div style="font-size:0.75rem; color:var(--text-staff-secondary);">${details}</div>
+          </div>
+        </div>
+        <span style="font-size:0.8rem; color:var(--text-staff-secondary);">${scanTime}</span>
+      `;
+      
+      container.insertBefore(logItem, container.firstChild);
+      sessionScans.push({ studentId, timestamp, isSuccess });
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = '/login/staff/';
+    }
+
+    window.onload = initConsole;
+  </script>
+</body>
+</html>

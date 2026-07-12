@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard - HostelHub</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <!-- Load QRCode.js CDN for client-side QR generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">🎓 HostelHub Student</div>
+    <div class="nav-user">
+      <div class="user-badge">
+        <div class="user-avatar" id="navAvatar">U</div>
+        <div class="user-info">
+          <span class="user-name" id="navName">Student Name</span>
+          <span class="user-role-label">Registered Student</span>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="dashboard-grid">
+      <!-- Read-Only Profile Card (Grid) -->
+      <div class="card" style="grid-column: span 8;">
+        <h2 class="card-title">My Registration Profile</h2>
+        <div class="profile-grid" id="profileGrid">
+          <div class="profile-item">
+            <span class="profile-label">Student ID</span>
+            <span class="profile-value" id="profileId">-</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Full Name</span>
+            <span class="profile-value" id="profileName">-</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Hostel Block</span>
+            <span class="profile-value" id="profileHostel">-</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Room Number</span>
+            <span class="profile-value" id="profileRoom">-</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Current Status</span>
+            <span class="profile-value" id="profileStatus">-</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Date of Birth</span>
+            <span class="profile-value" id="profileDob">-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Financial Fee Balance Card -->
+      <div class="card balance-card" style="grid-column: span 4;">
+        <span class="profile-label" style="color: rgba(255,255,255,0.7);">Pending Dues</span>
+        <h2>Account Balance</h2>
+        <div class="balance-amount" id="profileBalance">₹0.00</div>
+        <p style="margin-top: 15px; font-size: 0.8rem; opacity: 0.8;">Payments processed through the Central Accountant.</p>
+      </div>
+
+      <!-- Dynamic Mess Token Generator (QR) -->
+      <div class="card qr-card" style="grid-column: span 12;">
+        <h2 class="card-title">Live Mess Validation Token</h2>
+        <p style="color: var(--text-student-secondary); max-width: 600px; margin-bottom: 20px;">
+          Present this dynamic QR code at the centralized mess counter. To prevent static screenshot sharing, this token auto-refreshes every 30 seconds and binds to the active schedule window.
+        </p>
+
+        <div class="qr-wrapper">
+          <div id="qrcode"></div>
+          <div class="qr-overlay-expired" id="qrOverlayExpired">
+            <span style="font-size: 2rem;">⏳</span>
+            <span>TOKEN EXPIRED</span>
+          </div>
+        </div>
+
+        <div class="qr-timer-container" style="max-width: 300px;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600;">
+            <span>Dynamic Refresh</span>
+            <span id="timerText">30s</span>
+          </div>
+          <div class="qr-timer-bar">
+            <div class="qr-timer-progress" id="timerProgress"></div>
+          </div>
+          <div class="qr-meta-pill" id="qrMealWindow">Active Slot: Calculating...</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    let token = localStorage.getItem('hostelhub_token');
+    let studentData = null;
+    let qrTimerInterval = null;
+    let qrTimeLeft = 30;
+
+    // Verify token exists and type is correct
+    if (!token || localStorage.getItem('hostelhub_user_type') !== 'STUDENT') {
+      window.location.href = '/login/student/';
+    }
+
+    // Dynamic Helper for meal window calculation based on local time
+    function getMealWindow(date = new Date()) {
+      const hour = date.getHours();
+      if (hour >= 6 && hour < 10) return 'MORNING';
+      if (hour >= 12 && hour < 15) return 'AFTERNOON';
+      if (hour >= 18 && hour < 21) return 'EVENING';
+      return null;
+    }
+
+    function getMealWindowLabel(window) {
+      if (window === 'MORNING') return 'Breakfast (06:00 - 10:00)';
+      if (window === 'AFTERNOON') return 'Lunch (12:00 - 15:00)';
+      if (window === 'EVENING') return 'Dinner (18:00 - 21:00)';
+      return 'Mess Closed (No active window)';
+    }
+
+    // Dynamic toast helper
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <span>${message}</span>
+        <span style="cursor:pointer;" onclick="this.parentElement.remove()">×</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    // Load Student Profile
+    async function loadProfile() {
+      try {
+        const response = await fetch('/api/student/profile', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.status === 'SUCCESS') {
+          studentData = result.data;
+          
+          // Set Header badge
+          document.getElementById('navName').innerText = studentData.full_name;
+          document.getElementById('navAvatar').innerText = studentData.full_name.charAt(0);
+
+          // Populate Grid
+          document.getElementById('profileId').innerText = studentData.student_id;
+          document.getElementById('profileName').innerText = studentData.full_name;
+          document.getElementById('profileHostel').innerText = studentData.hostel_id + ' Block';
+          document.getElementById('profileRoom').innerText = studentData.room_number;
+          
+          // Status Pill styling
+          const statusVal = studentData.current_status;
+          const statusPill = document.createElement('span');
+          statusPill.className = `status-pill ${statusVal.toLowerCase()}`;
+          statusPill.innerText = statusVal;
+          const statusContainer = document.getElementById('profileStatus');
+          statusContainer.innerHTML = '';
+          statusContainer.appendChild(statusPill);
+
+          document.getElementById('profileDob').innerText = new Date(studentData.dob).toLocaleDateString();
+          document.getElementById('profileBalance').innerText = '₹' + parseFloat(studentData.fee_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+
+          // Start generating QR codes
+          startQrGenerator();
+
+        } else {
+          showToast(result.message || 'Error loading profile', 'error');
+          logout();
+        }
+      } catch (err) {
+        showToast('Network error loading student details.', 'error');
+        console.error(err);
+      }
+    }
+
+    // QR Token generation engine
+    function generateQR() {
+      if (!studentData) return;
+
+      const activeWindow = getMealWindow();
+      const metaContainer = document.getElementById('qrMealWindow');
+      
+      if (!activeWindow) {
+        metaContainer.innerText = getMealWindowLabel(null);
+        document.getElementById('qrcode').innerHTML = '<div style="color:var(--color-danger);font-weight:600;padding:20px;">Central Mess Closed<br>QR Code Deactivated</div>';
+        return;
+      }
+
+      metaContainer.innerText = `Active Slot: ${getMealWindowLabel(activeWindow)}`;
+      
+      // Calculate token content matching Schema specifications
+      const payload = {
+        student_id: studentData.student_id,
+        meal_window: activeWindow,
+        timestamp: Date.now()
+      };
+
+      // Clear QR box
+      const qrBox = document.getElementById('qrcode');
+      qrBox.innerHTML = '';
+      
+      // Instantiate class from CDN
+      new QRCode(qrBox, {
+        text: JSON.stringify(payload),
+        width: 180,
+        height: 180,
+        colorDark: "#0f172a",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    // Refresh countdown loop
+    function startQrGenerator() {
+      // First generation
+      generateQR();
+      
+      // Interval countdown timer
+      clearInterval(qrTimerInterval);
+      qrTimeLeft = 30;
+      
+      const timerProgress = document.getElementById('timerProgress');
+      const timerText = document.getElementById('timerText');
+      const overlay = document.getElementById('qrOverlayExpired');
+
+      qrTimerInterval = setInterval(() => {
+        qrTimeLeft--;
+        timerText.innerText = `${qrTimeLeft}s`;
+        
+        // Update bar width
+        const pct = (qrTimeLeft / 30) * 100;
+        timerProgress.style.width = `${pct}%`;
+
+        if (qrTimeLeft <= 0) {
+          // Temporarily show overlay to emulate expiration transition
+          overlay.classList.add('show');
+          setTimeout(() => {
+            overlay.classList.remove('show');
+            generateQR();
+            qrTimeLeft = 30;
+          }, 300);
+        }
+      }, 1000);
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = '/login/student/';
+    }
+
+    // Bootstrap profile loader
+    window.onload = loadProfile;
+  </script>
+</body>
+</html>

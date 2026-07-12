@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accountant Terminal - HostelHub</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="dark-theme">
+  <header class="app-header">
+    <div class="brand">💳 HostelHub Accounts</div>
+    <div class="nav-user">
+      <div class="user-badge">
+        <div class="user-avatar" id="navAvatar" style="background:#0d9488;">A</div>
+        <div class="user-info">
+          <span class="user-name" id="navName">Accountant Name</span>
+          <span class="user-role-label">Central Accountant</span>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="dashboard-grid">
+      <!-- Students Registry Ledger -->
+      <div class="card" style="grid-column: span 12;">
+        <div class="table-actions">
+          <h2 class="card-title">Student Registry & Fee Balances</h2>
+          <button class="btn-primary" onclick="openAddStudentModal()">+ Register Student</button>
+        </div>
+        
+        <div class="asset-table-wrapper">
+          <table class="asset-table">
+            <thead>
+              <tr>
+                <th>Student ID</th>
+                <th>Full Name</th>
+                <th>Hostel Block</th>
+                <th>Room</th>
+                <th>Status</th>
+                <th>Pending Balance</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="studentsTableBody">
+              <tr>
+                <td colspan="7" style="text-align: center; color: var(--text-staff-secondary); padding: 40px 0;">
+                  Retrieving student ledger records...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Register Student Modal -->
+  <div class="modal" id="addStudentModal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeAddStudentModal()">×</span>
+      <h2 class="login-title" style="margin-bottom: 20px;">Register New Student</h2>
+      
+      <form id="addStudentForm">
+        <div class="form-group">
+          <label class="form-label" for="fullName">Full Name</label>
+          <input class="form-input" type="text" id="fullName" placeholder="e.g. MOHAN KRISHNA" required>
+        </div>
+
+        <div class="form-group" style="display: flex; gap: 15px;">
+          <div style="flex: 1;">
+            <label class="form-label" for="hostelId">Hostel Block</label>
+            <select class="form-input" id="hostelId" required>
+              <option value="M1">M1 Block</option>
+              <option value="M2">M2 Block</option>
+              <option value="M3">M3 Block</option>
+            </select>
+          </div>
+          <div style="flex: 1;">
+            <label class="form-label" for="roomNumber">Room Number</label>
+            <input class="form-input" type="text" id="roomNumber" placeholder="e.g. 104A" required>
+          </div>
+        </div>
+
+        <div class="form-group" style="display: flex; gap: 15px;">
+          <div style="flex: 1;">
+            <label class="form-label" for="feeBalance">Fee Balance (₹)</label>
+            <input class="form-input" type="number" step="0.01" id="feeBalance" placeholder="e.g. 4500" required>
+          </div>
+          <div style="flex: 1;">
+            <label class="form-label" for="dob">Date of Birth</label>
+            <input class="form-input" type="date" id="dob" required>
+          </div>
+        </div>
+
+        <button class="btn-submit" type="submit" style="background:var(--staff-accent);">Write Student Registry</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Credentials Output Modal -->
+  <div class="modal" id="credentialsModal">
+    <div class="modal-content" style="border: 1px solid var(--color-success); border-top: 4px solid var(--color-success);">
+      <span class="modal-close" onclick="closeCredentialsModal()">×</span>
+      <h2 class="login-title" style="color:var(--color-success); margin-bottom: 8px;">Registration Complete</h2>
+      <p style="color: var(--text-staff-secondary); font-size: 0.9rem; margin-bottom: 25px;">
+        Student registered successfully. Copy the default auto-generated credentials:
+      </p>
+
+      <div class="form-group">
+        <label class="form-label">Auto-Generated User ID</label>
+        <input class="form-input" type="text" id="outputUserId" readonly style="background: #111827; border-color: var(--color-success); font-weight:700;">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Default Security Password</label>
+        <input class="form-input" type="text" id="outputPassword" readonly style="background: #111827; border-color: var(--color-success); font-weight:700;">
+      </div>
+
+      <button class="btn-submit" onclick="closeCredentialsModal()" style="background:var(--color-success); margin-top:10px;">Acknowledge & Close</button>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    const token = localStorage.getItem('hostelhub_token');
+    const userType = localStorage.getItem('hostelhub_user_type');
+
+    if (!token || userType !== 'STAFF') {
+      window.location.href = '/login/staff/';
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <span>${message}</span>
+        <span style="cursor:pointer;" onclick="this.parentElement.remove()">×</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4500);
+    }
+
+    function parseJwt(token) {
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function initAccountant() {
+      const payload = parseJwt(token);
+      if (!payload || payload.role !== 'ACCOUNTANT') {
+        showToast('Accountant authorization check failed.', 'error');
+        logout();
+        return;
+      }
+      document.getElementById('navName').innerText = payload.username.toUpperCase();
+      loadStudents();
+    }
+
+    async function loadStudents() {
+      try {
+        const response = await fetch('/api/accountant/students', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const result = await response.json();
+        if (response.ok && result.status === 'SUCCESS') {
+          populateStudentsTable(result.data);
+        } else {
+          showToast(result.message || 'Error loading ledger', 'error');
+        }
+      } catch (err) {
+        showToast('Network error loading students database.', 'error');
+        console.error(err);
+      }
+    }
+
+    function populateStudentsTable(students) {
+      const tbody = document.getElementById('studentsTableBody');
+      tbody.innerHTML = '';
+
+      if (!students || students.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align: center; color: var(--text-staff-secondary); padding: 40px 0;">
+              No registered students found in databases.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      students.forEach(student => {
+        const statusLabel = student.current_status;
+        const statusClass = `status-pill ${statusLabel.toLowerCase()}`;
+        const balance = parseFloat(student.fee_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${student.student_id}</strong></td>
+          <td>${student.full_name}</td>
+          <td>Block ${student.hostel_id}</td>
+          <td>${student.room_number}</td>
+          <td><span class="${statusClass}">${statusLabel}</span></td>
+          <td>₹${balance}</td>
+          <td>
+            <button class="btn-logout" style="padding:4px 8px; font-size:0.75rem; border-color:#ef4444; color:#ef4444; opacity:0.5; cursor:not-allowed;" 
+                    onclick="warnRbacRestriction('UPDATE')" title="Blocked by RBAC policy">
+              Edit
+            </button>
+            <button class="btn-logout" style="padding:4px 8px; font-size:0.75rem; border-color:#ef4444; color:#ef4444; opacity:0.5; cursor:not-allowed;" 
+                    onclick="warnRbacRestriction('DELETE')" title="Blocked by RBAC policy">
+              Purge
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function warnRbacRestriction(action) {
+      showToast(`RBAC Alert! Central Accountant is strictly blocked from executing ${action} actions on student registries or financial records to prevent internal fraud.`, 'error');
+    }
+
+    // Modal control
+    function openAddStudentModal() {
+      document.getElementById('addStudentModal').classList.add('show');
+    }
+
+    function closeAddStudentModal() {
+      document.getElementById('addStudentModal').classList.remove('show');
+      document.getElementById('addStudentForm').reset();
+    }
+
+    function closeCredentialsModal() {
+      document.getElementById('credentialsModal').classList.remove('show');
+    }
+
+    // Handle Form Submit
+    document.getElementById('addStudentForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const full_name = document.getElementById('fullName').value.trim();
+      const hostel_id = document.getElementById('hostelId').value;
+      const room_number = document.getElementById('roomNumber').value.trim();
+      const fee_balance = parseFloat(document.getElementById('feeBalance').value);
+      const dob = document.getElementById('dob').value;
+
+      try {
+        const response = await fetch('/api/accountant/students', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ full_name, hostel_id, room_number, fee_balance, dob })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.status === 'SUCCESS') {
+          closeAddStudentModal();
+          showToast('Student registered successfully', 'success');
+          
+          // Render credentials modal
+          document.getElementById('outputUserId').value = result.data.generated_credentials.username;
+          document.getElementById('outputPassword').value = result.data.generated_credentials.default_password;
+          document.getElementById('credentialsModal').classList.add('show');
+
+          loadStudents(); // reload list
+        } else {
+          showToast(result.message || 'Error executing student registration', 'error');
+        }
+      } catch (err) {
+        showToast('Network connection failure registering student.', 'error');
+        console.error(err);
+      }
+    });
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = '/login/staff/';
+    }
+
+    window.onload = initAccountant;
+  </script>
+</body>
+</html>

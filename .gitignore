@@ -1,0 +1,19 @@
+# Dependency directories
+node_modules/
+server/node_modules/
+temp-functions/node_modules/
+
+# Private environment variables (contains secrets/passwords)
+.env
+server/.env
+
+# Firebase logs and cache
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+*.local
+
+# OS Metadata files
+Thumbs.db
+desktop.ini
+.DS_Store

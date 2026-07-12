@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Gateway - HostelHub</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="login-container">
+    <div class="student-login-card">
+      <div class="login-logo">🎓 HostelHub</div>
+      <h2 class="login-title">Student Gateway</h2>
+      <p class="login-subtitle">Please authenticate using your system-generated ID and default password.</p>
+      
+      <form id="studentLoginForm">
+        <div class="form-group">
+          <label class="form-label" for="studentId">Student User ID</label>
+          <input class="form-input" type="text" id="studentId" placeholder="e.g., M1120726001" required autocomplete="username">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="password">Security Password</label>
+          <input class="form-input" type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        
+        <button class="btn-submit" type="submit">Verify Credentials</button>
+      </form>
+      
+      <div class="login-footer">
+        Are you hostel staff? <a href="/login/staff/">Go to Staff Terminal</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    // Toast Alert Helper
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <span>${message}</span>
+        <span style="cursor:pointer;" onclick="this.parentElement.remove()">×</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    document.getElementById('studentLoginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const student_id = document.getElementById('studentId').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const response = await fetch('/api/auth/student/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ student_id, password })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.status === 'SUCCESS') {
+          showToast(result.message, 'success');
+          // Cache token and redirect
+          localStorage.setItem('hostelhub_token', result.token);
+          localStorage.setItem('hostelhub_user_type', 'STUDENT');
+          setTimeout(() => {
+            window.location.href = result.redirect;
+          }, 800);
+        } else {
+          showToast(result.message || 'Login failed', 'error');
+        }
+      } catch (err) {
+        showToast('Network error connecting to API gateway.', 'error');
+        console.error(err);
+      }
+    });
+  </script>
+</body>
+</html>

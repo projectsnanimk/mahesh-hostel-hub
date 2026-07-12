@@ -1,0 +1,1052 @@
+/* public/css/styles.css */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+/* ==========================================================================
+   DESIGN TOKENS & ROOT PROPERTIES
+   ========================================================================== */
+:root {
+  --font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  
+  /* Color Palette - Light Mode (Student Theme) */
+  --bg-student: #f6f8fc;
+  --card-student: #ffffff;
+  --text-student-primary: #1e293b;
+  --text-student-secondary: #64748b;
+  --student-accent: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  --student-accent-hover: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+  
+  /* Color Palette - Dark Mode (Staff Terminal Theme) */
+  --bg-staff: #0b0f19;
+  --bg-staff-card: #151c2c;
+  --bg-staff-input: #1e293b;
+  --border-staff: #2d3748;
+  --text-staff-primary: #f8fafc;
+  --text-staff-secondary: #94a3b8;
+  --staff-accent: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  --staff-accent-hover: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+  
+  /* Alert Palette - Curated tones */
+  --color-success: #10b981;
+  --color-success-bg: rgba(16, 185, 129, 0.1);
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-danger-bg: rgba(239, 68, 68, 0.1);
+  
+  /* Shadows & Radius */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+  --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.08);
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==========================================================================
+   BASE & RESET STYLES
+   ========================================================================== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-student);
+  color: var(--text-student-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.5;
+  overflow-x: hidden;
+  transition: var(--transition-smooth);
+}
+
+/* Dark mode overrides for Staff Portal */
+body.dark-theme {
+  background-color: var(--bg-staff);
+  color: var(--text-staff-primary);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* ==========================================================================
+   LANDING / PORTAL SELECTOR VIEW
+   ========================================================================== */
+.portal-container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+}
+
+.portal-header {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.portal-title {
+  font-size: 3rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 12px;
+  letter-spacing: -1px;
+}
+
+.portal-subtitle {
+  color: var(--text-student-secondary);
+  font-size: 1.15rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.portal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 30px;
+  width: 100%;
+  max-width: 850px;
+}
+
+.portal-card {
+  background-color: var(--card-student);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: var(--transition-smooth);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.portal-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  background: var(--student-accent);
+  opacity: 0;
+  transition: var(--transition-smooth);
+}
+
+.portal-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-lg);
+}
+
+.portal-card:hover::before {
+  opacity: 1;
+}
+
+.portal-card.staff-card {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #ffffff;
+}
+
+.portal-card.staff-card::before {
+  background: var(--staff-accent);
+}
+
+.portal-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(79, 70, 229, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  margin-bottom: 24px;
+  color: #4f46e5;
+  transition: var(--transition-smooth);
+}
+
+.staff-card .portal-icon {
+  background: rgba(13, 148, 136, 0.15);
+  color: #0d9488;
+}
+
+.portal-card:hover .portal-icon {
+  transform: scale(1.1);
+}
+
+.portal-card-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.portal-card-desc {
+  font-size: 0.95rem;
+  color: var(--text-student-secondary);
+  margin-bottom: 30px;
+  flex-grow: 1;
+}
+
+.staff-card .portal-card-desc {
+  color: #94a3b8;
+}
+
+.portal-btn {
+  padding: 12px 28px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border: none;
+  width: 100%;
+  transition: var(--transition-smooth);
+}
+
+.portal-btn-student {
+  background: var(--student-accent);
+  color: #ffffff;
+}
+
+.portal-btn-student:hover {
+  background: var(--student-accent-hover);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.portal-btn-staff {
+  background: var(--staff-accent);
+  color: #ffffff;
+}
+
+.portal-btn-staff:hover {
+  background: var(--staff-accent-hover);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+}
+
+/* ==========================================================================
+   LOGIN CARD / CONSOLE STYLES
+   ========================================================================== */
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+  padding: 20px;
+  width: 100%;
+}
+
+/* Student Login: Light Responsive Card */
+.student-login-card {
+  background-color: var(--card-student);
+  width: 100%;
+  max-width: 440px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 40px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  animation: slideUp 0.6s ease-out;
+}
+
+/* Staff Login: Dark Sleek Console */
+.staff-login-terminal {
+  background-color: var(--bg-staff-card);
+  width: 100%;
+  max-width: 500px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg), 0 0 40px rgba(13, 148, 136, 0.1);
+  padding: 45px;
+  border: 1px solid var(--border-staff);
+  color: var(--text-staff-primary);
+  animation: slideUp 0.6s ease-out;
+  position: relative;
+}
+
+.staff-login-terminal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--staff-accent);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.login-logo {
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.student-login-card .login-logo {
+  color: #4f46e5;
+}
+
+.staff-login-terminal .login-logo {
+  color: #0d9488;
+}
+
+.login-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.login-subtitle {
+  color: var(--text-student-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 30px;
+}
+
+.staff-login-terminal .login-subtitle {
+  color: var(--text-staff-secondary);
+}
+
+.form-group {
+  margin-bottom: 22px;
+  text-align: left;
+}
+
+.form-label {
+  display: block;
+  font-weight: 500;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-student-primary);
+}
+
+.staff-login-terminal .form-label {
+  color: var(--text-staff-secondary);
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid #cbd5e1;
+  font-size: 0.95rem;
+  font-family: var(--font-family);
+  background-color: #f8fafc;
+  color: var(--text-student-primary);
+  transition: var(--transition-smooth);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+/* Staff Inputs: Dark theme */
+.staff-login-terminal .form-input {
+  background-color: var(--bg-staff-input);
+  border-color: var(--border-staff);
+  color: var(--text-staff-primary);
+}
+
+.staff-login-terminal .form-input:focus {
+  border-color: #0d9488;
+  background-color: #1e293b;
+  box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.15);
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  margin-top: 10px;
+}
+
+.student-login-card .btn-submit {
+  background: var(--student-accent);
+}
+
+.student-login-card .btn-submit:hover {
+  background: var(--student-accent-hover);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.staff-login-terminal .btn-submit {
+  background: var(--staff-accent);
+}
+
+.staff-login-terminal .btn-submit:hover {
+  background: var(--staff-accent-hover);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+}
+
+.login-footer {
+  margin-top: 25px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-student-secondary);
+}
+
+.login-footer a {
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.student-login-card .login-footer a {
+  color: #4f46e5;
+}
+
+.staff-login-terminal .login-footer a {
+  color: #0d9488;
+}
+
+.login-footer a:hover {
+  opacity: 0.8;
+}
+
+/* ==========================================================================
+   APP HEADER & CONTAINER STYLES (DASHBOARDS)
+   ========================================================================== */
+.app-header {
+  background-color: var(--card-student);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  padding: 16px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  transition: var(--transition-smooth);
+}
+
+body.dark-theme .app-header {
+  background-color: var(--bg-staff-card);
+  border-bottom: 1px solid var(--border-staff);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 1.4rem;
+  color: #4f46e5;
+}
+
+body.dark-theme .brand {
+  color: #0d9488;
+}
+
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--student-accent);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+body.dark-theme .user-avatar {
+  background: var(--staff-accent);
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.user-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.user-role-label {
+  font-size: 0.75rem;
+  color: var(--text-student-secondary);
+}
+
+body.dark-theme .user-role-label {
+  color: var(--text-staff-secondary);
+}
+
+.btn-logout {
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  color: var(--text-student-primary);
+}
+
+.btn-logout:hover {
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+body.dark-theme .btn-logout {
+  border-color: var(--border-staff);
+  color: var(--text-staff-primary);
+}
+
+body.dark-theme .btn-logout:hover {
+  background-color: #1e293b;
+}
+
+.main-content {
+  flex-grow: 1;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 40px;
+}
+
+/* ==========================================================================
+   DASHBOARD SUB-COMPONENTS
+   ========================================================================== */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 30px;
+}
+
+.card {
+  background-color: var(--card-student);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: var(--shadow-sm);
+  padding: 30px;
+  transition: var(--transition-smooth);
+}
+
+body.dark-theme .card {
+  background-color: var(--bg-staff-card);
+  border-color: var(--border-staff);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.card-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Profile Grid */
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.profile-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-student-secondary);
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+body.dark-theme .profile-label {
+  color: var(--text-staff-secondary);
+}
+
+.profile-value {
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+/* Balance Pill / Card */
+.balance-card {
+  background: var(--student-accent);
+  color: white;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.balance-card::after {
+  content: '';
+  position: absolute;
+  right: -50px;
+  bottom: -50px;
+  width: 150px;
+  height: 150px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+}
+
+.balance-amount {
+  font-size: 2.2rem;
+  font-weight: 800;
+  margin-top: 10px;
+}
+
+/* Status Pill indicators */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.status-pill.inside {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.status-pill.outside {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.status-pill.on_leave {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+/* ==========================================================================
+   STUDENT QR CODE GENERATOR SECTION
+   ========================================================================== */
+.qr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.qr-wrapper {
+  background: white;
+  padding: 20px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  margin: 20px 0;
+  display: inline-block;
+  position: relative;
+  border: 1px solid #e2e8f0;
+}
+
+.qr-overlay-expired {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255,255,255,0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  border-radius: var(--radius-md);
+  color: var(--color-danger);
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  transition: var(--transition-smooth);
+}
+
+.qr-overlay-expired.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.qr-timer-container {
+  width: 100%;
+  margin-top: 10px;
+  text-align: center;
+}
+
+.qr-timer-bar {
+  height: 4px;
+  background-color: #e2e8f0;
+  border-radius: 5px;
+  width: 100%;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.qr-timer-progress {
+  height: 100%;
+  background: var(--student-accent);
+  width: 100%;
+  transition: width 1s linear;
+}
+
+.qr-meta-pill {
+  background-color: #f1f5f9;
+  border-radius: 50px;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-top: 8px;
+  color: var(--text-student-secondary);
+}
+
+/* ==========================================================================
+   WARDEN SCANNING STATION UI
+   ========================================================================== */
+.scan-visualizer {
+  height: 250px;
+  background: #020617;
+  border: 2px dashed #334155;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 24px;
+  transition: border-color 0.3s;
+}
+
+.scan-laser {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #0d9488;
+  box-shadow: 0 0 12px 3px rgba(13, 148, 136, 0.8);
+  animation: scanMotion 2s infinite ease-in-out;
+}
+
+/* Flashing states for scanning visualizer */
+.scan-visualizer.success-flash {
+  border-color: var(--color-success);
+  animation: successPulse 0.5s ease-out;
+}
+
+.scan-visualizer.error-flash {
+  border-color: var(--color-danger);
+  animation: errorPulse 0.5s ease-out;
+}
+
+@keyframes successPulse {
+  0% { background-color: rgba(16, 185, 129, 0.3); }
+  100% { background-color: #020617; }
+}
+
+@keyframes errorPulse {
+  0% { background-color: rgba(239, 68, 68, 0.35); }
+  100% { background-color: #020617; }
+}
+
+.scan-log-list {
+  max-height: 250px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.scan-log-item {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-staff);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.scan-log-item:last-child {
+  border-bottom: none;
+}
+
+.scan-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-success);
+  display: inline-block;
+}
+
+/* ==========================================================================
+   CENTRAL KITCHEN METRICS CONTROLS
+   ========================================================================== */
+.kitchen-headcount-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.metric-mini-card {
+  background: var(--bg-staff-card);
+  border: 1px solid var(--border-staff);
+  border-radius: var(--radius-sm);
+  padding: 20px;
+  text-align: center;
+}
+
+.metric-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-staff-secondary);
+  margin-bottom: 6px;
+}
+
+.metric-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.asset-table-wrapper {
+  overflow-x: auto;
+}
+
+.asset-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.asset-table th {
+  padding: 14px 16px;
+  border-bottom: 2px solid var(--border-staff);
+  color: var(--text-staff-secondary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+
+.asset-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-staff);
+  font-size: 0.9rem;
+}
+
+.asset-table tr:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.stock-alert-tag {
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger);
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+/* ==========================================================================
+   ACCOUNTANT & ADMIN CRUD DATATABLE
+   ========================================================================== */
+.table-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.btn-primary {
+  background: var(--staff-accent);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.btn-primary:hover {
+  background: var(--staff-accent-hover);
+}
+
+/* For student card modals */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(11, 15, 25, 0.8);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: var(--transition-smooth);
+}
+
+.modal.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-content {
+  background-color: var(--bg-staff-card);
+  border: 1px solid var(--border-staff);
+  border-radius: var(--radius-md);
+  width: 100%;
+  max-width: 500px;
+  padding: 40px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  color: var(--text-staff-primary);
+}
+
+.modal-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-staff-secondary);
+}
+
+/* UI Alert Toaster */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.toast {
+  background-color: #1e293b;
+  border-left: 4px solid var(--staff-accent);
+  color: white;
+  padding: 16px 24px;
+  border-radius: 4px;
+  box-shadow: var(--shadow-md);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-width: 300px;
+  max-width: 450px;
+  animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toast.success {
+  border-color: var(--color-success);
+}
+
+.toast.error {
+  border-color: var(--color-danger);
+}
+
+/* ==========================================================================
+   CSS KEYFRAMES FOR TRANSITIONS
+   ========================================================================== */
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scanMotion {
+  0% { top: 0%; }
+  50% { top: 100%; }
+  100% { top: 0%; }
+}
+
+/* Responsive Grid Tweaks */
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .kitchen-headcount-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .portal-grid {
+    grid-template-columns: 1fr;
+  }
+  .app-header {
+    padding: 16px 20px;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .main-content {
+    padding: 20px;
+  }
+  .kitchen-headcount-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Command Console - HostelHub</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="dark-theme">
+  <header class="app-header">
+    <div class="brand">👑 HostelHub Admin</div>
+    <div class="nav-user">
+      <div class="user-badge">
+        <div class="user-avatar" id="navAvatar" style="background:#7c3aed;">AD</div>
+        <div class="user-info">
+          <span class="user-name" id="navName">Global Admin</span>
+          <span class="user-role-label">System Head</span>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <!-- Row 1: Central Kitchen Live Metrics -->
+    <h2 style="margin-bottom: 20px; border-left: 4px solid #7c3aed; padding-left: 10px;">Central Kitchen Control Panel</h2>
+    <div class="kitchen-headcount-grid">
+      <div class="metric-mini-card">
+        <div class="metric-label" id="liveMealWindow">Live Window Portions</div>
+        <div class="metric-value" id="metricsTotalPortions">0</div>
+        <div style="font-size:0.75rem; color:var(--text-staff-secondary); margin-top:4px;">Total Scans Across Blocks</div>
+      </div>
+      <div class="metric-mini-card">
+        <div class="metric-label">M1 Portion Headcount</div>
+        <div class="metric-value" style="color: #60a5fa;" id="metricsM1">0</div>
+      </div>
+      <div class="metric-mini-card">
+        <div class="metric-label">M2 Portion Headcount</div>
+        <div class="metric-value" style="color: #34d399;" id="metricsM2">0</div>
+      </div>
+      <div class="metric-mini-card">
+        <div class="metric-label">M3 Portion Headcount</div>
+        <div class="metric-value" style="color: #a78bfa;" id="metricsM3">0</div>
+      </div>
+    </div>
+
+    <div class="dashboard-grid" style="margin-bottom: 40px;">
+      <!-- Kitchen Stocks Card -->
+      <div class="card" style="grid-column: span 12;">
+        <h3 class="card-title">
+          <span>Central Kitchen Ingredients stock</span>
+          <span style="font-size:0.8rem; font-weight:normal; color:var(--text-staff-secondary);">*Auto-alert under safety thresholds</span>
+        </h3>
+        <div class="asset-table-wrapper">
+          <table class="asset-table">
+            <thead>
+              <tr>
+                <th>Ingredient</th>
+                <th>Available Capacity (KG)</th>
+                <th>Safety Threshold Buffer (KG)</th>
+                <th>Status</th>
+                <th>Adjustment</th>
+              </tr>
+            </thead>
+            <tbody id="inventoryTableBody">
+              <tr>
+                <td colspan="5" style="text-align: center; color: var(--text-staff-secondary); padding: 20px 0;">
+                  Retrieving inventory metrics...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2: Master Student Registry CRUD -->
+    <h2 style="margin-bottom: 20px; border-left: 4px solid #7c3aed; padding-left: 10px;">Master Student Records Registry</h2>
+    <div class="dashboard-grid">
+      <div class="card" style="grid-column: span 12;">
+        <div class="table-actions">
+          <h3 class="card-title">Active Registrations List</h3>
+          <button class="btn-primary" onclick="openAddStudentModal()" style="background:#7c3aed;">+ Add Student</button>
+        </div>
+        
+        <div class="asset-table-wrapper">
+          <table class="asset-table">
+            <thead>
+              <tr>
+                <th>Student ID</th>
+                <th>Full Name</th>
+                <th>Hostel Block</th>
+                <th>Room</th>
+                <th>Status</th>
+                <th>Fee Dues</th>
+                <th>DOB</th>
+                <th>Operations</th>
+              </tr>
+            </thead>
+            <tbody id="studentsTableBody">
+              <tr>
+                <td colspan="8" style="text-align: center; color: var(--text-staff-secondary); padding: 40px 0;">
+                  Loading students profiles...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Edit Stock Modal -->
+  <div class="modal" id="editStockModal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeEditStockModal()">×</span>
+      <h2 class="login-title" id="editStockTitle">Refill Ingredient</h2>
+      <form id="editStockForm">
+        <input type="hidden" id="editStockIngredientName">
+        <div class="form-group">
+          <label class="form-label" for="editStockQty">Current Quantity (KG)</label>
+          <input class="form-input" type="number" step="0.01" id="editStockQty" required>
+        </div>
+        <button class="btn-submit" type="submit" style="background:#7c3aed;">Execute Stock Write</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Student Modal -->
+  <div class="modal" id="editStudentModal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeEditStudentModal()">×</span>
+      <h2 class="login-title">Modify Student Profile</h2>
+      <form id="editStudentForm">
+        <input type="hidden" id="editStudentId">
+        
+        <div class="form-group">
+          <label class="form-label">Student ID (Read-Only)</label>
+          <input class="form-input" type="text" id="editStudentIdDisplay" readonly style="background:#1e293b; border-color:var(--border-staff); color:var(--text-staff-secondary);">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="editRoom">Allotted Room Number</label>
+          <input class="form-input" type="text" id="editRoom" required>
+        </div>
+
+        <div class="form-group" style="display: flex; gap: 15px;">
+          <div style="flex: 1;">
+            <label class="form-label" for="editFee">Fee Ledger Balance (₹)</label>
+            <input class="form-input" type="number" step="0.01" id="editFee" required>
+          </div>
+          <div style="flex: 1;">
+            <label class="form-label" for="editStatus">Status</label>
+            <select class="form-input" id="editStatus" required>
+              <option value="INSIDE">INSIDE</option>
+              <option value="OUTSIDE">OUTSIDE</option>
+              <option value="ON_LEAVE">ON_LEAVE</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="btn-submit" type="submit" style="background:#7c3aed;">Save Student Updates</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Register Student Modal -->
+  <div class="modal" id="addStudentModal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeAddStudentModal()">×</span>
+      <h2 class="login-title" style="margin-bottom: 20px;">Register New Student</h2>
+      
+      <form id="addStudentForm">
+        <div class="form-group">
+          <label class="form-label" for="fullName">Full Name</label>
+          <input class="form-input" type="text" id="fullName" placeholder="e.g. MOHAN KRISHNA" required>
+        </div>
+
+        <div class="form-group" style="display: flex; gap: 15px;">
+          <div style="flex: 1;">
+            <label class="form-label" for="hostelId">Hostel Block</label>
+            <select class="form-input" id="hostelId" required>
+              <option value="M1">M1 Block</option>
+              <option value="M2">M2 Block</option>
+              <option value="M3">M3 Block</option>
+            </select>
+          </div>
+          <div style="flex: 1;">
+            <label class="form-label" for="roomNumber">Room Number</label>
+            <input class="form-input" type="text" id="roomNumber" placeholder="e.g. 101A" required>
+          </div>
+        </div>
+
+        <div class="form-group" style="display: flex; gap: 15px;">
+          <div style="flex: 1;">
+            <label class="form-label" for="feeBalance">Fee Balance (₹)</label>
+            <input class="form-input" type="number" step="0.01" id="feeBalance" placeholder="e.g. 4500" required>
+          </div>
+          <div style="flex: 1;">
+            <label class="form-label" for="dob">Date of Birth</label>
+            <input class="form-input" type="date" id="dob" required>
+          </div>
+        </div>
+
+        <button class="btn-submit" type="submit" style="background:#7c3aed;">Register Student</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Credentials Output Modal -->
+  <div class="modal" id="credentialsModal">
+    <div class="modal-content" style="border: 1px solid var(--color-success); border-top: 4px solid var(--color-success);">
+      <span class="modal-close" onclick="closeCredentialsModal()">×</span>
+      <h2 class="login-title" style="color:var(--color-success); margin-bottom: 8px;">Registration Complete</h2>
+      <p style="color: var(--text-staff-secondary); font-size: 0.9rem; margin-bottom: 25px;">
+        Student registered successfully. Copy the default auto-generated credentials:
+      </p>
+
+      <div class="form-group">
+        <label class="form-label">Auto-Generated User ID</label>
+        <input class="form-input" type="text" id="outputUserId" readonly style="background: #111827; border-color: var(--color-success); font-weight:700;">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Default Security Password</label>
+        <input class="form-input" type="text" id="outputPassword" readonly style="background: #111827; border-color: var(--color-success); font-weight:700;">
+      </div>
+
+      <button class="btn-submit" onclick="closeCredentialsModal()" style="background:var(--color-success); margin-top:10px;">Acknowledge & Close</button>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    const token = localStorage.getItem('hostelhub_token');
+    const userType = localStorage.getItem('hostelhub_user_type');
+
+    // Validation Guard
+    if (!token || userType !== 'STAFF') {
+      window.location.href = '/login/staff/';
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <span>${message}</span>
+        <span style="cursor:pointer;" onclick="this.parentElement.remove()">×</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4500);
+    }
+
+    function parseJwt(token) {
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function initAdmin() {
+      const payload = parseJwt(token);
+      if (!payload || payload.role !== 'ADMIN') {
+        showToast('Admin authorization access verification failed.', 'error');
+        logout();
+        return;
+      }
+      document.getElementById('navName').innerText = `${payload.username.toUpperCase()} (Global Admin)`;
+      
+      // Load All metrics and student tables
+      loadKitchenMetrics();
+      loadStudents();
+    }
+
+    // ----------------------------------------------------
+    // KITCHEN MODULE
+    // ----------------------------------------------------
+    async function loadKitchenMetrics() {
+      try {
+        const response = await fetch('/api/kitchen/dashboard-metrics', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const result = await response.json();
+        
+        if (response.ok && result.status === 'SUCCESS') {
+          // Render headcounts
+          const { active_meal_window, headcount, inventory } = result.data;
+          document.getElementById('liveMealWindow').innerText = `Scans: ${active_meal_window} window`;
+          document.getElementById('metricsTotalPortions').innerText = headcount.total;
+          document.getElementById('metricsM1').innerText = headcount.M1;
+          document.getElementById('metricsM2').innerText = headcount.M2;
+          document.getElementById('metricsM3').innerText = headcount.M3;
+
+          populateInventoryTable(inventory);
+        }
+      } catch (err) {
+        showToast('Network error updating kitchen stats.', 'error');
+        console.error(err);
+      }
+    }
+
+    function populateInventoryTable(items) {
+      const tbody = document.getElementById('inventoryTableBody');
+      tbody.innerHTML = '';
+
+      items.forEach(item => {
+        const row = document.createElement('tr');
+        const statusText = item.low_stock_alert ? '<span class="stock-alert-tag">LOW STOCK ALERT</span>' : '<span style="color:var(--color-success); font-weight:600;">HEALTHY</span>';
+        
+        row.innerHTML = `
+          <td><strong>${item.ingredient_name}</strong></td>
+          <td>${item.stock_quantity_kg} KG</td>
+          <td>${item.alert_threshold_kg} KG</td>
+          <td>${statusText}</td>
+          <td>
+            <button class="btn-logout" style="border-color:#7c3aed; color:#a78bfa; padding:4px 8px; font-size:0.8rem;" 
+                    onclick="openEditStockModal('${item.ingredient_name}', ${item.stock_quantity_kg})">
+              Refill
+            </button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function openEditStockModal(name, qty) {
+      document.getElementById('editStockIngredientName').value = name;
+      document.getElementById('editStockTitle').innerText = `Refill Ingredient: ${name}`;
+      document.getElementById('editStockQty').value = qty;
+      document.getElementById('editStockModal').classList.add('show');
+    }
+
+    function closeEditStockModal() {
+      document.getElementById('editStockModal').classList.remove('show');
+    }
+
+    // Submit Refill
+    document.getElementById('editStockForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ingredient_name = document.getElementById('editStockIngredientName').value;
+      const stock_quantity_kg = parseFloat(document.getElementById('editStockQty').value);
+
+      try {
+        const response = await fetch('/api/kitchen/assets', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ ingredient_name, stock_quantity_kg })
+        });
+        const result = await response.json();
+        if (response.ok && result.status === 'SUCCESS') {
+          showToast(result.message, 'success');
+          closeEditStockModal();
+          loadKitchenMetrics();
+        } else {
+          showToast(result.message || 'Error updating stock', 'error');
+        }
+      } catch (err) {
+        showToast('Network error saving stock logs.', 'error');
+      }
+    });
+
+    // ----------------------------------------------------
+    // STUDENTS CRUD MODULE
+    // ----------------------------------------------------
+    async function loadStudents() {
+      try {
+        const response = await fetch('/api/accountant/students', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const result = await response.json();
+        if (response.ok && result.status === 'SUCCESS') {
+          populateStudentsTable(result.data);
+        }
+      } catch (err) {
+        showToast('Network error loading student lists.', 'error');
+      }
+    }
+
+    function populateStudentsTable(students) {
+      const tbody = document.getElementById('studentsTableBody');
+      tbody.innerHTML = '';
+
+      if (!students || students.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">No records exist.</td></tr>';
+        return;
+      }
+
+      students.forEach(student => {
+        const statusClass = `status-pill ${student.current_status.toLowerCase()}`;
+        const balance = parseFloat(student.fee_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+        const dobFormatted = new Date(student.dob).toLocaleDateString();
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${student.student_id}</strong></td>
+          <td>${student.full_name}</td>
+          <td>Block ${student.hostel_id}</td>
+          <td>${student.room_number}</td>
+          <td><span class="${statusClass}">${student.current_status}</span></td>
+          <td>₹${balance}</td>
+          <td>${dobFormatted}</td>
+          <td>
+            <button class="btn-logout" style="border-color:#7c3aed; color:#a78bfa; padding:4px 8px; font-size:0.75rem;" 
+                    onclick="openEditStudentModal('${student.student_id}', '${student.room_number}', ${student.fee_balance}, '${student.current_status}')">
+              Edit
+            </button>
+            <button class="btn-logout" style="border-color:#ef4444; color:#ef4444; padding:4px 8px; font-size:0.75rem;" 
+                    onclick="deleteStudent('${student.student_id}')">
+              Delete
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Modal helpers
+    function openEditStudentModal(id, room, fee, status) {
+      document.getElementById('editStudentId').value = id;
+      document.getElementById('editStudentIdDisplay').value = id;
+      document.getElementById('editRoom').value = room;
+      document.getElementById('editFee').value = fee;
+      document.getElementById('editStatus').value = status;
+      document.getElementById('editStudentModal').classList.add('show');
+    }
+
+    function closeEditStudentModal() {
+      document.getElementById('editStudentModal').classList.remove('show');
+    }
+
+    // Submit Student Updates
+    document.getElementById('editStudentForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('editStudentId').value;
+      const room_number = document.getElementById('editRoom').value.trim();
+      const fee_balance = parseFloat(document.getElementById('editFee').value);
+      const current_status = document.getElementById('editStatus').value;
+
+      try {
+        const response = await fetch(`/api/accountant/students/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ room_number, fee_balance, current_status })
+        });
+        const result = await response.json();
+        if (response.ok && result.status === 'SUCCESS') {
+          showToast(result.message, 'success');
+          closeEditStudentModal();
+          loadStudents();
+          loadKitchenMetrics(); // Headcounts could change if status changed
+        } else {
+          showToast(result.message || 'Error updating student', 'error');
+        }
+      } catch (err) {
+        showToast('Network error saving student changes.', 'error');
+      }
+    });
+
+    // Delete student
+    async function deleteStudent(id) {
+      if (!confirm(`Are you absolutely sure you want to permanently purge student '${id}'? This cannot be undone.`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/accountant/students/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const result = await response.json();
+        if (response.ok && result.status === 'SUCCESS') {
+          showToast(result.message, 'success');
+          loadStudents();
+          loadKitchenMetrics();
+        } else {
+          showToast(result.message || 'Error purging student record', 'error');
+        }
+      } catch (err) {
+        showToast('Network error executing student delete.', 'error');
+      }
+    }
+
+    // Add Student functions
+    function openAddStudentModal() {
+      document.getElementById('addStudentModal').classList.add('show');
+    }
+
+    function closeAddStudentModal() {
+      document.getElementById('addStudentModal').classList.remove('show');
+      document.getElementById('addStudentForm').reset();
+    }
+
+    function closeCredentialsModal() {
+      document.getElementById('credentialsModal').classList.remove('show');
+    }
+
+    document.getElementById('addStudentForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const full_name = document.getElementById('fullName').value.trim();
+      const hostel_id = document.getElementById('hostelId').value;
+      const room_number = document.getElementById('roomNumber').value.trim();
+      const fee_balance = parseFloat(document.getElementById('feeBalance').value);
+      const dob = document.getElementById('dob').value;
+
+      try {
+        const response = await fetch('/api/accountant/students', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ full_name, hostel_id, room_number, fee_balance, dob })
+        });
+        const result = await response.json();
+        if (response.ok && result.status === 'SUCCESS') {
+          closeAddStudentModal();
+          showToast('Student registered successfully', 'success');
+          
+          document.getElementById('outputUserId').value = result.data.generated_credentials.username;
+          document.getElementById('outputPassword').value = result.data.generated_credentials.default_password;
+          document.getElementById('credentialsModal').classList.add('show');
+
+          loadStudents();
+        } else {
+          showToast(result.message || 'Error registering student', 'error');
+        }
+      } catch (err) {
+        showToast('Network error during student registration.', 'error');
+      }
+    });
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = '/login/staff/';
+    }
+
+    window.onload = initAdmin;
+  </script>
+</body>
+</html>

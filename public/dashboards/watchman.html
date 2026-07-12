@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Watchman Console - HostelHub</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="dark-theme">
+  <header class="app-header">
+    <div class="brand">🚪 HostelHub Gate Patrol</div>
+    <div class="nav-user">
+      <div class="user-badge">
+        <div class="user-avatar" id="navAvatar" style="background:#0d9488;">G</div>
+        <div class="user-info">
+          <span class="user-name" id="navName">Watchman Name</span>
+          <span class="user-role-label" id="navRole">Gate Watchman</span>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="dashboard-grid">
+      <!-- Log Gate Event Card -->
+      <div class="card" style="grid-column: span 5;">
+        <h2 class="card-title">Gate Log Entry</h2>
+        <p style="color: var(--text-staff-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+          Log student entry and exit timestamps. Student must belong to your assigned block.
+        </p>
+
+        <form id="gateLogForm">
+          <div class="form-group">
+            <label class="form-label" for="studentId">Student User ID</label>
+            <input class="form-input" type="text" id="studentId" placeholder="e.g., M1120726001" required autocomplete="off">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="actionType">Movement Event</label>
+            <select class="form-input" id="actionType" required>
+              <option value="OUT">Check OUT (Exit Block)</option>
+              <option value="IN">Check IN (Enter Block)</option>
+            </select>
+          </div>
+
+          <button class="btn-submit" type="submit" style="background:var(--staff-accent);">Write Gate Log Entry</button>
+        </form>
+      </div>
+
+      <!-- Recent Check Logs List -->
+      <div class="card" style="grid-column: span 7; display: flex; flex-direction: column;">
+        <h2 class="card-title">Live Gate Ledger</h2>
+        <div style="flex-grow: 1; border: 1px solid var(--border-staff); border-radius: var(--radius-sm); overflow-y: auto; max-height: 400px; background: rgba(0,0,0,0.1);">
+          <ul class="scan-log-list" id="gateLogsContainer">
+            <li class="scan-log-item" style="color: var(--text-staff-secondary); text-align: center; justify-content: center; padding: 40px 0;">
+              No gate crossings registered today.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    const token = localStorage.getItem('hostelhub_token');
+    const userType = localStorage.getItem('hostelhub_user_type');
+    let watchmanProfile = {};
+
+    // Session guards
+    if (!token || userType !== 'STAFF') {
+      window.location.href = '/login/staff/';
+    }
+
+    // Dynamic toast alerts helper
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <span>${message}</span>
+        <span style="cursor:pointer;" onclick="this.parentElement.remove()">×</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4500);
+    }
+
+    // Parse Watchman details from JWT token
+    function parseJwt(token) {
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function initWatchman() {
+      const payload = parseJwt(token);
+      if (!payload || payload.role !== 'WATCHMAN') {
+        showToast('Watchman authorization verification failed.', 'error');
+        logout();
+        return;
+      }
+
+      watchmanProfile = payload;
+      document.getElementById('navName').innerText = `${payload.username.toUpperCase()} (Block ${payload.assigned_hostel})`;
+      document.getElementById('navRole').innerText = `Watchman Block ${payload.assigned_hostel} Gate`;
+      document.getElementById('navAvatar').innerText = payload.assigned_hostel;
+      
+      // Load logs
+      loadGateLogs();
+    }
+
+    // Fetch gate logs from server
+    async function loadGateLogs() {
+      try {
+        const response = await fetch('/api/watchman/gate-log', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.status === 'SUCCESS') {
+          populateGateLogs(result.data);
+        } else {
+          showToast(result.message || 'Error loading gate ledger', 'error');
+        }
+      } catch (err) {
+        showToast('Network error pulling gate ledger.', 'error');
+        console.error(err);
+      }
+    }
+
+    function populateGateLogs(logs) {
+      const container = document.getElementById('gateLogsContainer');
+      container.innerHTML = '';
+
+      if (!logs || logs.length === 0) {
+        container.innerHTML = `
+          <li class="scan-log-item" style="color: var(--text-staff-secondary); text-align: center; justify-content: center; padding: 40px 0;">
+            No gate crossings registered today.
+          </li>
+        `;
+        return;
+      }
+
+      logs.forEach(log => {
+        const time = new Date(log.logged_at).toLocaleTimeString();
+        const date = new Date(log.logged_at).toLocaleDateString();
+        const actionLabel = log.action_type === 'IN' ? 'CHECKED IN' : 'CHECKED OUT';
+        const actionClass = log.action_type === 'IN' ? 'status-pill inside' : 'status-pill outside';
+        const isSuccess = log.action_type === 'IN';
+
+        const li = document.createElement('li');
+        li.className = 'scan-log-item';
+        li.innerHTML = `
+          <div style="display:flex; align-items:center; gap: 12px;">
+            <span class="${actionClass}">${actionLabel}</span>
+            <div style="text-align:left;">
+              <div style="font-weight: 600;">Student ID: ${log.student_id}</div>
+              <div style="font-size:0.75rem; color:var(--text-staff-secondary);">Name: ${log.student_name}</div>
+            </div>
+          </div>
+          <div style="text-align:right; font-size:0.8rem; color:var(--text-staff-secondary);">
+            <div>${time}</div>
+            <div style="font-size:0.7rem;">${date}</div>
+          </div>
+        `;
+        container.appendChild(li);
+      });
+    }
+
+    // Submit log gate event
+    document.getElementById('gateLogForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const student_id = document.getElementById('studentId').value.trim();
+      const action_type = document.getElementById('actionType').value;
+
+      try {
+        const response = await fetch('/api/watchman/gate-log', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ student_id, action_type })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.status === 'SUCCESS') {
+          showToast(result.message, 'success');
+          document.getElementById('studentId').value = ''; // Clear input
+          loadGateLogs(); // Refresh ledger list
+        } else {
+          showToast(result.message || 'Log write rejected by controller.', 'error');
+        }
+      } catch (err) {
+        showToast('Network error writing gate log.', 'error');
+        console.error(err);
+      }
+    });
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = '/login/staff/';
+    }
+
+    window.onload = initWatchman;
+  </script>
+</body>
+</html>
