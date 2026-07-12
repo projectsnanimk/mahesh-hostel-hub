@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Warden Console - HostelHub</title>
   <link rel="stylesheet" href="/css/styles.css">
+  <script src="/js/db-helper.js"></script>
 </head>
 <body class="dark-theme">
   <header class="app-header">
@@ -120,41 +121,22 @@
       }
     }
 
-    // Parse Warden details from JWT token
-    function parseJwt(token) {
-      try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        return JSON.parse(jsonPayload);
-      } catch (e) {
-        return null;
-      }
-    }
-
     function initConsole() {
-      const payload = parseJwt(token);
-      if (!payload || payload.role !== 'WARDEN') {
-        showToast('Warden access authorization check failed.', 'error');
+      try {
+        const payload = JSON.parse(token);
+        if (!payload || payload.role !== 'WARDEN') {
+          showToast('Warden access authorization check failed.', 'error');
+          logout();
+          return;
+        }
+
+        wardenProfile = payload;
+        document.getElementById('navName').innerText = `${payload.username.toUpperCase()} (Block ${payload.assigned_hostel})`;
+        document.getElementById('navRole').innerText = `Warden Block ${payload.assigned_hostel}`;
+        document.getElementById('navAvatar').innerText = payload.assigned_hostel;
+      } catch (e) {
         logout();
-        return;
       }
-
-      wardenProfile = payload;
-      document.getElementById('navName').innerText = `${payload.username.toUpperCase()} (Block ${payload.assigned_hostel})`;
-      document.getElementById('navRole').innerText = `Warden Block ${payload.assigned_hostel}`;
-      document.getElementById('navAvatar').innerText = payload.assigned_hostel;
-      
-      // Load session scan list
-      refreshScanLogs();
-    }
-
-    // Fetch recent mess scan entries from API
-    async function refreshScanLogs() {
-      // In this client view we keep it in memory or fetch recent logs from the backend if required
-      // Since it's a Warden view we can query the backend or display the current scanner session logs
     }
 
     const sessionScans = [];
@@ -162,64 +144,57 @@
     const statusText = document.getElementById('scannerStatus');
     const laser = document.getElementById('scanLaser');
 
-    document.getElementById('scanQrForm').addEventListener('submit', async (e) => {
+    document.getElementById('scanQrForm').addEventListener('submit', (e) => {
       e.preventDefault();
       
       const qr_token = document.getElementById('qrToken').value.trim();
       statusText.innerText = "Verifying Token Handshake...";
       laser.style.background = "#eab308"; // Scanning color yellow
 
-      try {
-        const response = await fetch('/api/warden/scan-qr', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ qr_token })
-        });
+      setTimeout(() => {
+        try {
+          const result = HostelHubDB.scanQr(qr_token, wardenProfile.assigned_hostel);
 
-        const result = await response.json();
+          // Remove old animation states
+          visualizer.classList.remove('success-flash', 'error-flash');
 
-        // Remove old animation states
-        visualizer.classList.remove('success-flash', 'error-flash');
+          if (result.status === 'SUCCESS') {
+            // Success Feedback
+            playBeep(true);
+            visualizer.classList.add('success-flash');
+            statusText.innerText = "SCAN VERIFIED - serving granted";
+            statusText.style.color = "var(--color-success)";
+            laser.style.background = "var(--color-success)";
+            showToast(result.message, 'success');
 
-        if (response.ok && result.status === 'SUCCESS') {
-          // Success Feedback
-          playBeep(true);
-          visualizer.classList.add('success-flash');
-          statusText.innerText = "SCAN VERIFIED - serving granted";
-          statusText.style.color = "var(--color-success)";
-          laser.style.background = "var(--color-success)";
-          showToast(result.message, 'success');
+            // Log into session list
+            let parsed = {};
+            try { parsed = JSON.parse(qr_token); } catch(e) {}
+            addScanToSessionLog(parsed.student_id || 'Unknown', result.timestamp, true, result.message);
+            
+            document.getElementById('qrToken').value = ''; // clear input
+          } else {
+            // Error / Duplicate Feedback
+            playBeep(false);
+            visualizer.classList.add('error-flash');
+            statusText.innerText = "DENIED: " + (result.message || "Fraud Alert");
+            statusText.style.color = "var(--color-danger)";
+            laser.style.background = "var(--color-danger)";
+            showToast(result.message || 'Verification Error', 'error');
 
-          // Log into session list
-          let parsed = {};
-          try { parsed = JSON.parse(qr_token); } catch(e) {}
-          addScanToSessionLog(parsed.student_id || 'Unknown', result.timestamp, true, result.message);
-          
-          document.getElementById('qrToken').value = ''; // clear input
-        } else {
-          // Error / Duplicate Feedback
+            let parsed = {};
+            try { parsed = JSON.parse(qr_token); } catch(e) {}
+            addScanToSessionLog(parsed.student_id || 'Unknown', new Date().toISOString(), false, result.message);
+          }
+        } catch (err) {
           playBeep(false);
           visualizer.classList.add('error-flash');
-          statusText.innerText = "DENIED: " + (result.message || "Fraud Alert");
+          statusText.innerText = "LOCAL PROCESSING FAILURE";
           statusText.style.color = "var(--color-danger)";
-          laser.style.background = "var(--color-danger)";
-          showToast(result.message || 'Verification Error', 'error');
-
-          let parsed = {};
-          try { parsed = JSON.parse(qr_token); } catch(e) {}
-          addScanToSessionLog(parsed.student_id || 'Unknown', new Date().toISOString(), false, result.message);
+          showToast('Database error processing scan request.', 'error');
+          console.error(err);
         }
-      } catch (err) {
-        playBeep(false);
-        visualizer.classList.add('error-flash');
-        statusText.innerText = "API CONNECTION FAILURE";
-        statusText.style.color = "var(--color-danger)";
-        showToast('Network error processing request.', 'error');
-        console.error(err);
-      }
+      }, 500);
     });
 
     function addScanToSessionLog(studentId, timestamp, isSuccess, details) {

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Student Gateway - HostelHub</title>
   <link rel="stylesheet" href="/css/styles.css">
+  <script src="/js/db-helper.js"></script>
 </head>
 <body>
   <div class="login-container">
@@ -49,36 +50,28 @@
       setTimeout(() => toast.remove(), 4000);
     }
 
-    document.getElementById('studentLoginForm').addEventListener('submit', async (e) => {
+    document.getElementById('studentLoginForm').addEventListener('submit', (e) => {
       e.preventDefault();
       
       const student_id = document.getElementById('studentId').value.trim();
       const password = document.getElementById('password').value;
 
       try {
-        const response = await fetch('/api/auth/student/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ student_id, password })
-        });
+        const student = HostelHubDB.authenticateStudent(student_id, password);
 
-        const result = await response.json();
-
-        if (response.ok && result.status === 'SUCCESS') {
-          showToast(result.message, 'success');
-          // Cache token and redirect
-          localStorage.setItem('hostelhub_token', result.token);
+        if (student) {
+          showToast('Student Authenticated Successfully', 'success');
+          // Cache mock token and user type
+          localStorage.setItem('hostelhub_token', student.student_id);
           localStorage.setItem('hostelhub_user_type', 'STUDENT');
           setTimeout(() => {
-            window.location.href = result.redirect;
+            window.location.href = '/dashboards/student.html';
           }, 800);
         } else {
-          showToast(result.message || 'Login failed', 'error');
+          showToast('Authentication Failed: Invalid Student ID or Password', 'error');
         }
       } catch (err) {
-        showToast('Network error connecting to API gateway.', 'error');
+        showToast('Local database processing error.', 'error');
         console.error(err);
       }
     });

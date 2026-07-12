@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Student Dashboard - HostelHub</title>
   <link rel="stylesheet" href="/css/styles.css">
+  <script src="/js/db-helper.js"></script>
   <!-- Load QRCode.js CDN for client-side QR generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
@@ -136,18 +137,12 @@
     }
 
     // Load Student Profile
-    async function loadProfile() {
+    function loadProfile() {
       try {
-        const response = await fetch('/api/student/profile', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        const student = HostelHubDB.getStudentById(token);
 
-        const result = await response.json();
-
-        if (response.ok && result.status === 'SUCCESS') {
-          studentData = result.data;
+        if (student) {
+          studentData = student;
           
           // Set Header badge
           document.getElementById('navName').innerText = studentData.full_name;
@@ -175,11 +170,11 @@
           startQrGenerator();
 
         } else {
-          showToast(result.message || 'Error loading profile', 'error');
+          showToast('Error loading profile record from browser database.', 'error');
           logout();
         }
       } catch (err) {
-        showToast('Network error loading student details.', 'error');
+        showToast('Local database processing error.', 'error');
         console.error(err);
       }
     }

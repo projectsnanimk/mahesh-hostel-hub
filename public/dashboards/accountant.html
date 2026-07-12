@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Accountant Terminal - HostelHub</title>
   <link rel="stylesheet" href="/css/styles.css">
+  <script src="/js/db-helper.js"></script>
 </head>
 <body class="dark-theme">
   <header class="app-header">
@@ -144,45 +145,27 @@
       setTimeout(() => toast.remove(), 4500);
     }
 
-    function parseJwt(token) {
-      try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        return JSON.parse(jsonPayload);
-      } catch (e) {
-        return null;
-      }
-    }
-
     function initAccountant() {
-      const payload = parseJwt(token);
-      if (!payload || payload.role !== 'ACCOUNTANT') {
-        showToast('Accountant authorization check failed.', 'error');
+      try {
+        const payload = JSON.parse(token);
+        if (!payload || payload.role !== 'ACCOUNTANT') {
+          showToast('Accountant authorization check failed.', 'error');
+          logout();
+          return;
+        }
+        document.getElementById('navName').innerText = payload.username.toUpperCase();
+        loadStudents();
+      } catch (e) {
         logout();
-        return;
       }
-      document.getElementById('navName').innerText = payload.username.toUpperCase();
-      loadStudents();
     }
 
-    async function loadStudents() {
+    function loadStudents() {
       try {
-        const response = await fetch('/api/accountant/students', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const result = await response.json();
-        if (response.ok && result.status === 'SUCCESS') {
-          populateStudentsTable(result.data);
-        } else {
-          showToast(result.message || 'Error loading ledger', 'error');
-        }
+        const list = HostelHubDB.getStudents();
+        populateStudentsTable(list);
       } catch (err) {
-        showToast('Network error loading students database.', 'error');
+        showToast('Error loading student ledger from browser database.', 'error');
         console.error(err);
       }
     }
@@ -249,7 +232,7 @@
     }
 
     // Handle Form Submit
-    document.getElementById('addStudentForm').addEventListener('submit', async (e) => {
+    document.getElementById('addStudentForm').addEventListener('submit', (e) => {
       e.preventDefault();
       
       const full_name = document.getElementById('fullName').value.trim();
@@ -259,32 +242,19 @@
       const dob = document.getElementById('dob').value;
 
       try {
-        const response = await fetch('/api/accountant/students', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ full_name, hostel_id, room_number, fee_balance, dob })
-        });
+        const newStudent = HostelHubDB.createStudent(full_name, hostel_id, room_number, fee_balance, dob);
 
-        const result = await response.json();
+        closeAddStudentModal();
+        showToast('Student registered successfully', 'success');
+        
+        // Render credentials modal
+        document.getElementById('outputUserId').value = newStudent.student_id;
+        document.getElementById('outputPassword').value = newStudent.password;
+        document.getElementById('credentialsModal').classList.add('show');
 
-        if (response.ok && result.status === 'SUCCESS') {
-          closeAddStudentModal();
-          showToast('Student registered successfully', 'success');
-          
-          // Render credentials modal
-          document.getElementById('outputUserId').value = result.data.generated_credentials.username;
-          document.getElementById('outputPassword').value = result.data.generated_credentials.default_password;
-          document.getElementById('credentialsModal').classList.add('show');
-
-          loadStudents(); // reload list
-        } else {
-          showToast(result.message || 'Error executing student registration', 'error');
-        }
+        loadStudents(); // reload list
       } catch (err) {
-        showToast('Network connection failure registering student.', 'error');
+        showToast('Error registering student to local database.', 'error');
         console.error(err);
       }
     });

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Watchman Console - HostelHub</title>
   <link rel="stylesheet" href="/css/styles.css">
+  <script src="/js/db-helper.js"></script>
 </head>
 <body class="dark-theme">
   <header class="app-header">
@@ -87,55 +88,34 @@
       setTimeout(() => toast.remove(), 4500);
     }
 
-    // Parse Watchman details from JWT token
-    function parseJwt(token) {
-      try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        return JSON.parse(jsonPayload);
-      } catch (e) {
-        return null;
-      }
-    }
-
     function initWatchman() {
-      const payload = parseJwt(token);
-      if (!payload || payload.role !== 'WATCHMAN') {
-        showToast('Watchman authorization verification failed.', 'error');
-        logout();
-        return;
-      }
+      try {
+        const payload = JSON.parse(token);
+        if (!payload || payload.role !== 'WATCHMAN') {
+          showToast('Watchman authorization verification failed.', 'error');
+          logout();
+          return;
+        }
 
-      watchmanProfile = payload;
-      document.getElementById('navName').innerText = `${payload.username.toUpperCase()} (Block ${payload.assigned_hostel})`;
-      document.getElementById('navRole').innerText = `Watchman Block ${payload.assigned_hostel} Gate`;
-      document.getElementById('navAvatar').innerText = payload.assigned_hostel;
-      
-      // Load logs
-      loadGateLogs();
+        watchmanProfile = payload;
+        document.getElementById('navName').innerText = `${payload.username.toUpperCase()} (Block ${payload.assigned_hostel})`;
+        document.getElementById('navRole').innerText = `Watchman Block ${payload.assigned_hostel} Gate`;
+        document.getElementById('navAvatar').innerText = payload.assigned_hostel;
+        
+        // Load logs
+        loadGateLogs();
+      } catch (e) {
+        logout();
+      }
     }
 
-    // Fetch gate logs from server
-    async function loadGateLogs() {
+    // Fetch gate logs from client database
+    function loadGateLogs() {
       try {
-        const response = await fetch('/api/watchman/gate-log', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        const result = await response.json();
-        
-        if (response.ok && result.status === 'SUCCESS') {
-          populateGateLogs(result.data);
-        } else {
-          showToast(result.message || 'Error loading gate ledger', 'error');
-        }
+        const logs = HostelHubDB.getGateLogs(watchmanProfile.assigned_hostel);
+        populateGateLogs(logs);
       } catch (err) {
-        showToast('Network error pulling gate ledger.', 'error');
+        showToast('Error pulling local gate ledger.', 'error');
         console.error(err);
       }
     }
@@ -158,7 +138,6 @@
         const date = new Date(log.logged_at).toLocaleDateString();
         const actionLabel = log.action_type === 'IN' ? 'CHECKED IN' : 'CHECKED OUT';
         const actionClass = log.action_type === 'IN' ? 'status-pill inside' : 'status-pill outside';
-        const isSuccess = log.action_type === 'IN';
 
         const li = document.createElement('li');
         li.className = 'scan-log-item';
@@ -180,33 +159,29 @@
     }
 
     // Submit log gate event
-    document.getElementById('gateLogForm').addEventListener('submit', async (e) => {
+    document.getElementById('gateLogForm').addEventListener('submit', (e) => {
       e.preventDefault();
       
       const student_id = document.getElementById('studentId').value.trim();
       const action_type = document.getElementById('actionType').value;
 
       try {
-        const response = await fetch('/api/watchman/gate-log', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ student_id, action_type })
-        });
+        const result = HostelHubDB.addGateLog(
+          student_id, 
+          action_type, 
+          watchmanProfile.id, 
+          watchmanProfile.assigned_hostel
+        );
 
-        const result = await response.json();
-
-        if (response.ok && result.status === 'SUCCESS') {
-          showToast(result.message, 'success');
+        if (result.status === 'SUCCESS') {
+          showToast(`Patrol logged check-${action_type.toLowerCase()} for student.`, 'success');
           document.getElementById('studentId').value = ''; // Clear input
           loadGateLogs(); // Refresh ledger list
         } else {
-          showToast(result.message || 'Log write rejected by controller.', 'error');
+          showToast(result.message || 'Log write rejected.', 'error');
         }
       } catch (err) {
-        showToast('Network error writing gate log.', 'error');
+        showToast('Error writing gate log to local database.', 'error');
         console.error(err);
       }
     });

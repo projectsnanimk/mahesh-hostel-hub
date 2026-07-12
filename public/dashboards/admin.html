@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Command Console - HostelHub</title>
   <link rel="stylesheet" href="/css/styles.css">
+  <script src="/js/db-helper.js"></script>
 </head>
 <body class="dark-theme">
   <header class="app-header">
@@ -253,58 +254,42 @@
       setTimeout(() => toast.remove(), 4500);
     }
 
-    function parseJwt(token) {
-      try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        return JSON.parse(jsonPayload);
-      } catch (e) {
-        return null;
-      }
-    }
-
     function initAdmin() {
-      const payload = parseJwt(token);
-      if (!payload || payload.role !== 'ADMIN') {
-        showToast('Admin authorization access verification failed.', 'error');
+      try {
+        const payload = JSON.parse(token);
+        if (!payload || payload.role !== 'ADMIN') {
+          showToast('Admin authorization access verification failed.', 'error');
+          logout();
+          return;
+        }
+        document.getElementById('navName').innerText = `${payload.username.toUpperCase()} (Global Admin)`;
+        
+        // Load All metrics and student tables
+        loadKitchenMetrics();
+        loadStudents();
+      } catch (e) {
         logout();
-        return;
       }
-      document.getElementById('navName').innerText = `${payload.username.toUpperCase()} (Global Admin)`;
-      
-      // Load All metrics and student tables
-      loadKitchenMetrics();
-      loadStudents();
     }
 
     // ----------------------------------------------------
     // KITCHEN MODULE
     // ----------------------------------------------------
-    async function loadKitchenMetrics() {
+    function loadKitchenMetrics() {
       try {
-        const response = await fetch('/api/kitchen/dashboard-metrics', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const result = await response.json();
+        const result = HostelHubDB.getKitchenMetrics();
         
-        if (response.ok && result.status === 'SUCCESS') {
-          // Render headcounts
-          const { active_meal_window, headcount, inventory } = result.data;
-          document.getElementById('liveMealWindow').innerText = `Scans: ${active_meal_window} window`;
-          document.getElementById('metricsTotalPortions').innerText = headcount.total;
-          document.getElementById('metricsM1').innerText = headcount.M1;
-          document.getElementById('metricsM2').innerText = headcount.M2;
-          document.getElementById('metricsM3').innerText = headcount.M3;
+        // Render headcounts
+        const { active_meal_window, headcount, inventory } = result;
+        document.getElementById('liveMealWindow').innerText = `Scans: ${active_meal_window} window`;
+        document.getElementById('metricsTotalPortions').innerText = headcount.total;
+        document.getElementById('metricsM1').innerText = headcount.M1;
+        document.getElementById('metricsM2').innerText = headcount.M2;
+        document.getElementById('metricsM3').innerText = headcount.M3;
 
-          populateInventoryTable(inventory);
-        }
+        populateInventoryTable(inventory);
       } catch (err) {
-        showToast('Network error updating kitchen stats.', 'error');
+        showToast('Local database processing error updating kitchen stats.', 'error');
         console.error(err);
       }
     }
@@ -345,49 +330,34 @@
     }
 
     // Submit Refill
-    document.getElementById('editStockForm').addEventListener('submit', async (e) => {
+    document.getElementById('editStockForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const ingredient_name = document.getElementById('editStockIngredientName').value;
       const stock_quantity_kg = parseFloat(document.getElementById('editStockQty').value);
 
       try {
-        const response = await fetch('/api/kitchen/assets', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ ingredient_name, stock_quantity_kg })
-        });
-        const result = await response.json();
-        if (response.ok && result.status === 'SUCCESS') {
-          showToast(result.message, 'success');
+        const result = HostelHubDB.updateKitchenStock(ingredient_name, stock_quantity_kg);
+        if (result) {
+          showToast(`Central kitchen stock updated for ${ingredient_name}.`, 'success');
           closeEditStockModal();
           loadKitchenMetrics();
         } else {
-          showToast(result.message || 'Error updating stock', 'error');
+          showToast('Error updating stock', 'error');
         }
       } catch (err) {
-        showToast('Network error saving stock logs.', 'error');
+        showToast('Local database error saving stock logs.', 'error');
       }
     });
 
     // ----------------------------------------------------
     // STUDENTS CRUD MODULE
     // ----------------------------------------------------
-    async function loadStudents() {
+    function loadStudents() {
       try {
-        const response = await fetch('/api/accountant/students', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const result = await response.json();
-        if (response.ok && result.status === 'SUCCESS') {
-          populateStudentsTable(result.data);
-        }
+        const list = HostelHubDB.getStudents();
+        populateStudentsTable(list);
       } catch (err) {
-        showToast('Network error loading student lists.', 'error');
+        showToast('Error loading student lists.', 'error');
       }
     }
 
@@ -444,7 +414,7 @@
     }
 
     // Submit Student Updates
-    document.getElementById('editStudentForm').addEventListener('submit', async (e) => {
+    document.getElementById('editStudentForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const id = document.getElementById('editStudentId').value;
       const room_number = document.getElementById('editRoom').value.trim();
@@ -452,51 +422,37 @@
       const current_status = document.getElementById('editStatus').value;
 
       try {
-        const response = await fetch(`/api/accountant/students/${id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ room_number, fee_balance, current_status })
-        });
-        const result = await response.json();
-        if (response.ok && result.status === 'SUCCESS') {
-          showToast(result.message, 'success');
+        const result = HostelHubDB.updateStudent(id, room_number, fee_balance, current_status);
+        if (result) {
+          showToast('Student registry updated successfully.', 'success');
           closeEditStudentModal();
           loadStudents();
           loadKitchenMetrics(); // Headcounts could change if status changed
         } else {
-          showToast(result.message || 'Error updating student', 'error');
+          showToast('Error updating student', 'error');
         }
       } catch (err) {
-        showToast('Network error saving student changes.', 'error');
+        showToast('Error saving student changes.', 'error');
       }
     });
 
     // Delete student
-    async function deleteStudent(id) {
+    function deleteStudent(id) {
       if (!confirm(`Are you absolutely sure you want to permanently purge student '${id}'? This cannot be undone.`)) {
         return;
       }
 
       try {
-        const response = await fetch(`/api/accountant/students/${id}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const result = await response.json();
-        if (response.ok && result.status === 'SUCCESS') {
-          showToast(result.message, 'success');
+        const result = HostelHubDB.deleteStudent(id);
+        if (result) {
+          showToast(`Student registry record '${id}' purged.`, 'success');
           loadStudents();
           loadKitchenMetrics();
         } else {
-          showToast(result.message || 'Error purging student record', 'error');
+          showToast('Error purging student record', 'error');
         }
       } catch (err) {
-        showToast('Network error executing student delete.', 'error');
+        showToast('Error executing student delete.', 'error');
       }
     }
 
@@ -514,7 +470,7 @@
       document.getElementById('credentialsModal').classList.remove('show');
     }
 
-    document.getElementById('addStudentForm').addEventListener('submit', async (e) => {
+    document.getElementById('addStudentForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const full_name = document.getElementById('fullName').value.trim();
       const hostel_id = document.getElementById('hostelId').value;
@@ -523,29 +479,18 @@
       const dob = document.getElementById('dob').value;
 
       try {
-        const response = await fetch('/api/accountant/students', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ full_name, hostel_id, room_number, fee_balance, dob })
-        });
-        const result = await response.json();
-        if (response.ok && result.status === 'SUCCESS') {
-          closeAddStudentModal();
-          showToast('Student registered successfully', 'success');
-          
-          document.getElementById('outputUserId').value = result.data.generated_credentials.username;
-          document.getElementById('outputPassword').value = result.data.generated_credentials.default_password;
-          document.getElementById('credentialsModal').classList.add('show');
+        const newStudent = HostelHubDB.createStudent(full_name, hostel_id, room_number, fee_balance, dob);
+        
+        closeAddStudentModal();
+        showToast('Student registered successfully', 'success');
+        
+        document.getElementById('outputUserId').value = newStudent.student_id;
+        document.getElementById('outputPassword').value = newStudent.password;
+        document.getElementById('credentialsModal').classList.add('show');
 
-          loadStudents();
-        } else {
-          showToast(result.message || 'Error registering student', 'error');
-        }
+        loadStudents();
       } catch (err) {
-        showToast('Network error during student registration.', 'error');
+        showToast('Local database error during student registration.', 'error');
       }
     });
 

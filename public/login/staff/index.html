@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Staff Terminal - HostelHub</title>
   <link rel="stylesheet" href="/css/styles.css">
+  <script src="/js/db-helper.js"></script>
 </head>
 <body class="dark-theme">
   <div class="login-container">
@@ -49,36 +50,77 @@
       setTimeout(() => toast.remove(), 4000);
     }
 
-    document.getElementById('staffLoginForm').addEventListener('submit', async (e) => {
+    document.getElementById('staffLoginForm').addEventListener('submit', (e) => {
       e.preventDefault();
       
       const identifier = document.getElementById('identifier').value.trim();
       const password = document.getElementById('password').value;
 
       try {
-        const response = await fetch('/api/auth/staff/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ identifier, password })
-        });
+        const staff = HostelHubDB.authenticateStaff(identifier, password);
 
-        const result = await response.json();
-
-        if (response.ok && result.status === 'SUCCESS') {
-          showToast(result.message, 'success');
-          // Cache token and redirect
-          localStorage.setItem('hostelhub_token', result.token);
-          localStorage.setItem('hostelhub_user_type', 'STAFF');
-          setTimeout(() => {
-            window.location.href = result.redirect;
-          }, 800);
-        } else {
-          showToast(result.message || 'Authentication handshake rejected.', 'error');
+        if (!staff) {
+          showToast('Authentication Failed: Invalid Credentials', 'error');
+          return;
         }
+
+        let redirectUrl = '';
+        
+        switch (staff.user_role) {
+          case 'ADMIN':
+            if (identifier === 'GLADM001') {
+              showToast('Admin Authentication Restriction: Global Admin must log in using Corporate Mail ID or Username, not Staff ID.', 'error');
+              return;
+            }
+            redirectUrl = '/dashboards/admin.html';
+            break;
+
+          case 'ACCOUNTANT':
+            if (identifier !== staff.user_id) {
+              showToast('Accountant Authentication Restriction: Central Accountant must log in using their unique Staff ID string.', 'error');
+              return;
+            }
+            redirectUrl = '/dashboards/accountant.html';
+            break;
+
+          case 'WARDEN':
+            if (identifier !== staff.user_id) {
+              showToast('Warden Authentication Restriction: Local Warden must log in using their unique Staff ID string.', 'error');
+              return;
+            }
+            redirectUrl = '/dashboards/warden.html';
+            break;
+
+          case 'WATCHMAN':
+            if (identifier !== staff.user_id) {
+              showToast('Watchman Authentication Restriction: Local Watchman must log in using their unique Staff ID string.', 'error');
+              return;
+            }
+            redirectUrl = '/dashboards/watchman.html';
+            break;
+
+          default:
+            showToast('Access Denied: Invalid Corporate Personnel Node', 'error');
+            return;
+        }
+
+        showToast('Staff Authenticated Successfully', 'success');
+        
+        // Cache token details locally (using JSON string representation of the token metadata)
+        const mockTokenData = {
+          id: staff.user_id,
+          username: staff.username,
+          role: staff.user_role,
+          assigned_hostel: staff.assigned_hostel
+        };
+        localStorage.setItem('hostelhub_token', JSON.stringify(mockTokenData));
+        localStorage.setItem('hostelhub_user_type', 'STAFF');
+
+        setTimeout(() => {
+          window.location.href = redirectUrl;
+        }, 800);
       } catch (err) {
-        showToast('Network error connecting to auth server console.', 'error');
+        showToast('Local database processing error.', 'error');
         console.error(err);
       }
     });
