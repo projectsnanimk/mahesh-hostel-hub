@@ -72,7 +72,7 @@
 
     // Session guards
     if (!token || userType !== 'STAFF') {
-      window.location.href = '/login/staff/';
+      window.location.href = '/staff/';
     }
 
     // Dynamic toast alerts helper
@@ -188,7 +188,7 @@
 
     function logout() {
       localStorage.clear();
-      window.location.href = '/login/staff/';
+      window.location.href = '/staff/';
     }
 
     window.onload = initWatchman;

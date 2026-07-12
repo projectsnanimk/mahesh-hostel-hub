@@ -104,7 +104,7 @@
 
     // Verify token exists and type is correct
     if (!token || localStorage.getItem('hostelhub_user_type') !== 'STUDENT') {
-      window.location.href = '/login/student/';
+      window.location.href = '/';
     }
 
     // Dynamic Helper for meal window calculation based on local time
@@ -251,7 +251,7 @@
 
     function logout() {
       localStorage.clear();
-      window.location.href = '/login/student/';
+      window.location.href = '/';
     }
 
     // Bootstrap profile loader

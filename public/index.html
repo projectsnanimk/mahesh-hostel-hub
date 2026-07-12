@@ -3,33 +3,78 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HostelHub - Multi-Tenant Hostel Management SaaS</title>
+  <title>Student Gateway - HostelHub</title>
   <link rel="stylesheet" href="/css/styles.css">
+  <script src="/js/db-helper.js"></script>
 </head>
 <body>
-  <div class="portal-container">
-    <div class="portal-header">
-      <h1 class="portal-title">HostelHub</h1>
-      <p class="portal-subtitle">Enterprise-Grade Multi-Tenant Hostel Management SaaS Platform. Seamless mess tracking, secure gate access control, and central kitchen asset management.</p>
-    </div>
-    
-    <div class="portal-grid">
-      <!-- Student Gateway Card -->
-      <div class="portal-card student-card" onclick="window.location.href='/login/student/'">
-        <div class="portal-icon">🎓</div>
-        <h2 class="portal-card-title">Student Gateway</h2>
-        <p class="portal-card-desc">Access student dashboard to view fee ledgers, check room allotments, and generate time-expiring active QR codes for daily mess validation scans.</p>
-        <button class="portal-btn portal-btn-student">Enter Gateway</button>
-      </div>
+  <div class="login-container">
+    <div class="student-login-card">
+      <div class="login-logo">🎓 HostelHub</div>
+      <h2 class="login-title">Student Gateway</h2>
+      <p class="login-subtitle">Please authenticate using your system-generated ID and default password.</p>
       
-      <!-- Staff Terminal Card -->
-      <div class="portal-card staff-card" onclick="window.location.href='/login/staff/'">
-        <div class="portal-icon">🛠️</div>
-        <h2 class="portal-card-title">Staff Terminal</h2>
-        <p class="portal-card-desc">Secure operations portal for Global Admins, Central Accountants, Local Wardens, and watchmen to run mess scanners, log entry gates, and process registries.</p>
-        <button class="portal-btn portal-btn-staff">Access Terminal</button>
+      <form id="studentLoginForm">
+        <div class="form-group">
+          <label class="form-label" for="studentId">Student User ID</label>
+          <input class="form-input" type="text" id="studentId" placeholder="e.g., M1120726001" required autocomplete="username">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="password">Security Password</label>
+          <input class="form-input" type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        
+        <button class="btn-submit" type="submit">Verify Credentials</button>
+      </form>
+      
+      <div class="login-footer">
+        Are you hostel staff? <a href="/staff/">Go to Staff Terminal</a>
       </div>
     </div>
   </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    // Toast Alert Helper
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <span>${message}</span>
+        <span style="cursor:pointer;" onclick="this.parentElement.remove()">×</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    document.getElementById('studentLoginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const student_id = document.getElementById('studentId').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const student = HostelHubDB.authenticateStudent(student_id, password);
+
+        if (student) {
+          showToast('Student Authenticated Successfully', 'success');
+          // Cache mock token and user type
+          localStorage.setItem('hostelhub_token', student.student_id);
+          localStorage.setItem('hostelhub_user_type', 'STUDENT');
+          setTimeout(() => {
+            window.location.href = '/dashboards/student.html';
+          }, 800);
+        } else {
+          showToast('Authentication Failed: Invalid Student ID or Password', 'error');
+        }
+      } catch (err) {
+        showToast('Local database processing error.', 'error');
+        console.error(err);
+      }
+    });
+  </script>
 </body>
 </html>

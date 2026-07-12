@@ -239,7 +239,7 @@
 
     // Validation Guard
     if (!token || userType !== 'STAFF') {
-      window.location.href = '/login/staff/';
+      window.location.href = '/staff/';
     }
 
     function showToast(message, type = 'success') {
@@ -496,7 +496,7 @@
 
     function logout() {
       localStorage.clear();
-      window.location.href = '/login/staff/';
+      window.location.href = '/staff/';
     }
 
     window.onload = initAdmin;
