@@ -37,17 +37,27 @@ const DEFAULT_STUDENTS = [
   { student_id: 'M3120726001', full_name: 'AN SHARMA', password: 'ANX@01122004', hostel_id: 'M3', room_number: '302C', fee_balance: 12000.00, current_status: 'OUTSIDE', dob: '2004-12-01', registration_date: '2026-07-12' }
 ];
 
-// Initialize localStorage DB if empty
+// Initialize localStorage DB if empty or missing keys
 function initStorageDb() {
-  if (!localStorage.getItem('hostelhub_db')) {
-    const db = {
-      hostels: DEFAULT_HOSTELS,
-      central_kitchen_assets: DEFAULT_ASSETS,
-      staff_users: DEFAULT_STAFF,
-      students: DEFAULT_STUDENTS,
-      mess_attendance_logs: [],
-      gate_logs: []
-    };
+  let db = {};
+  const raw = localStorage.getItem('hostelhub_db');
+  if (raw) {
+    try {
+      db = JSON.parse(raw);
+    } catch(e) {
+      db = {};
+    }
+  }
+  
+  let changed = false;
+  if (!db.hostels) { db.hostels = DEFAULT_HOSTELS; changed = true; }
+  if (!db.central_kitchen_assets) { db.central_kitchen_assets = DEFAULT_ASSETS; changed = true; }
+  if (!db.staff_users) { db.staff_users = DEFAULT_STAFF; changed = true; }
+  if (!db.students) { db.students = DEFAULT_STUDENTS; changed = true; }
+  if (!db.mess_attendance_logs) { db.mess_attendance_logs = []; changed = true; }
+  if (!db.gate_logs) { db.gate_logs = []; changed = true; }
+  
+  if (changed || !raw) {
     localStorage.setItem('hostelhub_db', JSON.stringify(db));
   }
 }
