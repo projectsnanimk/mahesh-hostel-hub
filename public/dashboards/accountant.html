@@ -3,19 +3,160 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Accountant Terminal - HostelHub</title>
+  <title>MAHESH HOSTELS STAFF PORTAL - Accountant Dashboard</title>
   <link rel="stylesheet" href="/css/styles.css">
   <script src="/js/db-helper.js"></script>
+  <style>
+    /* Premium Dashboard Overrides */
+    .brand {
+      color: #0d9488 !important;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    
+    /* Tab Controls */
+    .dashboard-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 30px;
+      background: rgba(21, 28, 44, 0.6);
+      padding: 6px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-staff);
+      max-width: fit-content;
+    }
+    
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-staff-secondary);
+      padding: 10px 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: var(--transition-smooth);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .tab-btn:hover {
+      color: var(--text-staff-primary);
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    .tab-btn.active {
+      color: white;
+      background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.35);
+    }
+    
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.4s ease-out;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Payroll input controls */
+    .payroll-days-input {
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      background-color: var(--bg-staff-input);
+      border: 1px solid var(--border-staff);
+      color: white;
+      font-weight: 600;
+      text-align: center;
+      font-size: 0.85rem;
+    }
+    
+    /* Progress Bars */
+    .stock-bar-container {
+      width: 130px;
+      background: #090d16;
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 10px;
+    }
+    
+    .stock-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.8s ease-in-out;
+    }
+    
+    .stock-bar-fill.normal {
+      background: linear-gradient(90deg, #10b981, #34d399);
+    }
+    
+    .stock-bar-fill.low {
+      background: linear-gradient(90deg, #ef4444, #f87171);
+      animation: pulseGlow 1.5s infinite;
+    }
+    
+    @keyframes pulseGlow {
+      0% { opacity: 0.6; }
+      50% { opacity: 1; }
+      100% { opacity: 0.6; }
+    }
+
+    /* Action buttons */
+    .btn-action {
+      background: transparent;
+      border: 1px solid var(--border-staff);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+    
+    .btn-action.edit {
+      border-color: #0d9488;
+      color: #2dd4bf;
+    }
+    
+    .btn-action.edit:hover {
+      background: rgba(13, 148, 136, 0.1);
+    }
+    
+    .btn-action.pay {
+      border-color: #10b981;
+      color: #34d399;
+    }
+    
+    .btn-action.pay:hover {
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    /* Modal Glassmorphism */
+    .modal {
+      background: rgba(4, 6, 10, 0.7);
+      backdrop-filter: blur(8px);
+    }
+  </style>
 </head>
 <body class="dark-theme">
   <header class="app-header">
-    <div class="brand">💳 HostelHub Accounts</div>
+    <div class="brand">💳 MAHESH HOSTELS STAFF PORTAL</div>
     <div class="nav-user">
       <div class="user-badge">
         <div class="user-avatar" id="navAvatar" style="background:#0d9488;">A</div>
         <div class="user-info">
-          <span class="user-name" id="navName">Accountant Name</span>
-          <span class="user-role-label">Central Accountant</span>
+          <span class="user-name" id="navName">Central Accountant</span>
+          <span class="user-role-label">Financial Officer</span>
         </div>
       </div>
       <button class="btn-logout" onclick="logout()">Logout</button>
@@ -23,12 +164,23 @@
   </header>
 
   <main class="main-content">
-    <div class="dashboard-grid">
-      <!-- Students Registry Ledger -->
-      <div class="card" style="grid-column: span 12;">
+    
+    <!-- Tab Controls Row -->
+    <div class="dashboard-tabs">
+      <button class="tab-btn active" onclick="switchTab('tab-ledger')">💳 Student Fee Ledger</button>
+      <button class="tab-btn" onclick="switchTab('tab-payroll')">👥 Staff Payroll</button>
+      <button class="tab-btn" onclick="switchTab('tab-kitchen')">🍳 Kitchen Stock</button>
+    </div>
+
+    <!-- ----------------------------------------------------------------------
+         TAB 1: STUDENT FEE LEDGER
+         ---------------------------------------------------------------------- -->
+    <div id="tab-ledger" class="tab-content active">
+      <!-- Students Registry Card -->
+      <div class="card" style="margin-bottom: 30px;">
         <div class="table-actions">
-          <h2 class="card-title">Student Registry & Fee Balances</h2>
-          <button class="btn-primary" onclick="openAddStudentModal()">+ Register Student</button>
+          <h2 class="card-title">Student Fee Accounts Ledger</h2>
+          <button class="btn-primary" onclick="openAddStudentModal()" style="background:#0d9488;">+ Register Student</button>
         </div>
         
         <div class="asset-table-wrapper">
@@ -54,7 +206,105 @@
           </table>
         </div>
       </div>
+
+      <!-- Transaction Log Card -->
+      <div class="card">
+        <h3 class="card-title">Recent Fee Payments Log</h3>
+        <div class="asset-table-wrapper">
+          <table class="asset-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Receipt ID</th>
+                <th>Student ID</th>
+                <th>Student Name</th>
+                <th>Amount Paid</th>
+                <th>Payment Mode</th>
+              </tr>
+            </thead>
+            <tbody id="paymentTransactionsTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-staff-secondary); padding: 20px 0;">
+                  No transactions recorded yet today.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
+
+    <!-- ----------------------------------------------------------------------
+         TAB 2: STAFF PAYROLL
+         ---------------------------------------------------------------------- -->
+    <div id="tab-payroll" class="tab-content">
+      <div class="card">
+        <div class="table-actions">
+          <h2 class="card-title">Staff Registry & Payroll Cockpit</h2>
+          <button class="btn-primary" onclick="openAddStaffModal()" style="background:#0d9488;">+ Add Staff Member</button>
+        </div>
+        
+        <div class="asset-table-wrapper">
+          <table class="asset-table">
+            <thead>
+              <tr>
+                <th>Staff ID</th>
+                <th>Name</th>
+                <th>System Role</th>
+                <th>Assigned Block</th>
+                <th>Base Monthly Salary</th>
+                <th style="width: 90px; text-align: center;">Present Days</th>
+                <th style="width: 90px; text-align: center;">Absent Days</th>
+                <th>Net Calculated Salary</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="staffTableBody">
+              <tr>
+                <td colspan="9" style="text-align: center; color: var(--text-staff-secondary); padding: 40px 0;">
+                  Retrieving staff records...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ----------------------------------------------------------------------
+         TAB 3: KITCHEN STOCK
+         ---------------------------------------------------------------------- -->
+    <div id="tab-kitchen" class="tab-content">
+      <div class="card">
+        <div class="table-actions">
+          <h2 class="card-title">Central Kitchen Ingredients supply</h2>
+          <span style="font-size:0.8rem; color:var(--text-staff-secondary);">*Update stock levels or log used kitchen quantities</span>
+        </div>
+        
+        <div class="asset-table-wrapper">
+          <table class="asset-table">
+            <thead>
+              <tr>
+                <th>Ingredient Name</th>
+                <th>Stock Level Buffer</th>
+                <th>Current Capacity (KG)</th>
+                <th>Safety Threshold (KG)</th>
+                <th>Alert Status</th>
+                <th>Adjustments</th>
+              </tr>
+            </thead>
+            <tbody id="inventoryTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-staff-secondary); padding: 40px 0;">
+                  Retrieving inventory metrics...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <!-- Register Student Modal -->
@@ -95,7 +345,152 @@
           </div>
         </div>
 
-        <button class="btn-submit" type="submit" style="background:var(--staff-accent);">Write Student Registry</button>
+        <button class="btn-submit" type="submit" style="background:#0d9488;">Write Student Registry</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Record Payment Modal -->
+  <div class="modal" id="recordPaymentModal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeRecordPaymentModal()">×</span>
+      <h2 class="login-title" style="margin-bottom: 20px;">Record Fee Payment</h2>
+      
+      <form id="recordPaymentForm">
+        <input type="hidden" id="payStudentId">
+        
+        <div class="form-group" style="display: flex; gap: 15px;">
+          <div style="flex: 1;">
+            <label class="form-label">Student ID</label>
+            <input class="form-input" type="text" id="payStudentIdDisplay" readonly style="background:#1e293b; color:var(--text-staff-secondary); border-color:var(--border-staff);">
+          </div>
+          <div style="flex: 1;">
+            <label class="form-label">Remaining Balance (₹)</label>
+            <input class="form-input" type="text" id="payStudentBalanceDisplay" readonly style="background:#1e293b; color:var(--text-staff-secondary); border-color:var(--border-staff);">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Student Name</label>
+          <input class="form-input" type="text" id="payStudentName" readonly style="background:#1e293b; color:var(--text-staff-secondary); border-color:var(--border-staff);">
+        </div>
+
+        <div class="form-group" style="display: flex; gap: 15px;">
+          <div style="flex: 1;">
+            <label class="form-label" for="payAmount">Amount Paid (₹)</label>
+            <input class="form-input" type="number" step="0.01" id="payAmount" placeholder="e.g. 1500" required min="1">
+          </div>
+          <div style="flex: 1;">
+            <label class="form-label" for="payMode">Payment Mode</label>
+            <select class="form-input" id="payMode" required>
+              <option value="UPI">UPI (GPay / PhonePe)</option>
+              <option value="Cash">Hard Cash</option>
+              <option value="Card">Credit/Debit Card</option>
+              <option value="Net Banking">Net Banking</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="btn-submit" type="submit" style="background:#0d9488;">Acknowledge Payment Receipt</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Staff Modal -->
+  <div class="modal" id="addStaffModal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeAddStaffModal()">×</span>
+      <h2 class="login-title" style="margin-bottom: 20px;">Add New Staff Profile</h2>
+      
+      <form id="addStaffForm">
+        <div class="form-group">
+          <label class="form-label" for="staffName">Full Name</label>
+          <input class="form-input" type="text" id="staffName" placeholder="e.g. K. RAMESH WARDEN" required>
+        </div>
+
+        <div class="form-group" style="display: flex; gap: 15px;">
+          <div style="flex: 1;">
+            <label class="form-label" for="staffUsername">Login Username</label>
+            <input class="form-input" type="text" id="staffUsername" placeholder="e.g. ramesh_warden" required>
+          </div>
+          <div style="flex: 1;">
+            <label class="form-label" for="staffEmail">Email Address</label>
+            <input class="form-input" type="email" id="staffEmail" placeholder="e.g. ramesh@hostelhub.com" required>
+          </div>
+        </div>
+
+        <div class="form-group" style="display: flex; gap: 15px;">
+          <div style="flex: 1;">
+            <label class="form-label" for="staffRole">System Role</label>
+            <select class="form-input" id="staffRole" required>
+              <option value="WARDEN">WARDEN (Block Caretaker)</option>
+              <option value="WATCHMAN">WATCHMAN (Gate Control)</option>
+              <option value="ACCOUNTANT">ACCOUNTANT (Financials)</option>
+              <option value="ADMIN">ADMIN (System Head)</option>
+            </select>
+          </div>
+          <div style="flex: 1;">
+            <label class="form-label" for="staffBlock">Assigned Block</label>
+            <select class="form-input" id="staffBlock" required>
+              <option value="None">Global (None)</option>
+              <option value="M1">M1 Residential</option>
+              <option value="M2">M2 Residential</option>
+              <option value="M3">M3 Residential</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="display: flex; gap: 15px;">
+          <div style="flex: 1;">
+            <label class="form-label" for="staffSalary">Base Monthly Salary (₹)</label>
+            <input class="form-input" type="number" step="0.01" id="staffSalary" placeholder="e.g. 45000" required>
+          </div>
+          <div style="flex: 1;">
+            <label class="form-label" for="staffPassword">Portal Password</label>
+            <input class="form-input" type="text" id="staffPassword" placeholder="e.g. PWD1234" required>
+          </div>
+        </div>
+
+        <button class="btn-submit" type="submit" style="background:#0d9488;">Create Personnel Record</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Adjust Stock Modal -->
+  <div class="modal" id="adjustStockModal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeAdjustStockModal()">×</span>
+      <h2 class="login-title" id="adjustStockTitle">Deduct/Refill Stock</h2>
+      <form id="adjustStockForm">
+        <input type="hidden" id="adjustIngredientName">
+        <input type="hidden" id="adjustCurrentQty">
+        
+        <div class="form-group" style="display: flex; gap: 15px;">
+          <div style="flex: 1;">
+            <label class="form-label">Ingredient</label>
+            <input class="form-input" type="text" id="adjustIngredientDisplay" readonly style="background:#1e293b; color:var(--text-staff-secondary); border-color:var(--border-staff);">
+          </div>
+          <div style="flex: 1;">
+            <label class="form-label">Current Stock (KG)</label>
+            <input class="form-input" type="text" id="adjustCurrentQtyDisplay" readonly style="background:#1e293b; color:var(--text-staff-secondary); border-color:var(--border-staff);">
+          </div>
+        </div>
+
+        <div class="form-group" style="display: flex; gap: 15px;">
+          <div style="flex: 1;">
+            <label class="form-label" for="adjustAction">Adjustment Action</label>
+            <select class="form-input" id="adjustAction" required>
+              <option value="REFILL">Refill Stock (+ Addition)</option>
+              <option value="USED">Record Usage (- Deduction)</option>
+            </select>
+          </div>
+          <div style="flex: 1;">
+            <label class="form-label" for="adjustDelta">Quantity delta (KG)</label>
+            <input class="form-input" type="number" step="0.01" id="adjustDelta" required min="0.01" placeholder="e.g. 20.00">
+          </div>
+        </div>
+
+        <button class="btn-submit" type="submit" style="background:#0d9488;">Apply Adjustment</button>
       </form>
     </div>
   </div>
@@ -123,6 +518,29 @@
     </div>
   </div>
 
+  <!-- Staff Credentials Output Modal -->
+  <div class="modal" id="staffCredentialsModal">
+    <div class="modal-content" style="border: 1px solid var(--color-success); border-top: 4px solid var(--color-success);">
+      <span class="modal-close" onclick="closeStaffCredentialsModal()">×</span>
+      <h2 class="login-title" style="color:var(--color-success); margin-bottom: 8px;">Staff Added Successfully</h2>
+      <p style="color: var(--text-staff-secondary); font-size: 0.9rem; margin-bottom: 25px;">
+        Personnel record added to database. Copy the generated staff credentials:
+      </p>
+
+      <div class="form-group">
+        <label class="form-label">Generated Staff ID</label>
+        <input class="form-input" type="text" id="staffOutputId" readonly style="background: #111827; border-color: var(--color-success); font-weight:700;">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Security Password</label>
+        <input class="form-input" type="text" id="staffOutputPassword" readonly style="background: #111827; border-color: var(--color-success); font-weight:700;">
+      </div>
+
+      <button class="btn-submit" onclick="closeStaffCredentialsModal()" style="background:var(--color-success); margin-top:10px;">Acknowledge & Close</button>
+    </div>
+  </div>
+
   <div class="toast-container" id="toastContainer"></div>
 
   <script>
@@ -145,6 +563,18 @@
       setTimeout(() => toast.remove(), 4500);
     }
 
+    // Tab switcher helper
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      document.getElementById(tabId).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+
     function initAccountant() {
       try {
         const payload = JSON.parse(token);
@@ -153,13 +583,21 @@
           logout();
           return;
         }
-        document.getElementById('navName').innerText = payload.username.toUpperCase();
+        document.getElementById('navName').innerText = `${payload.username.toUpperCase()} (Central Accounts)`;
+        
+        // Load tables
         loadStudents();
+        loadPaymentsLog();
+        loadStaff();
+        loadKitchenMetrics();
       } catch (e) {
         logout();
       }
     }
 
+    // ----------------------------------------------------
+    // LEDGER & STUDENT FEE MODULE
+    // ----------------------------------------------------
     function loadStudents() {
       try {
         const list = HostelHubDB.getStudents();
@@ -175,13 +613,7 @@
       tbody.innerHTML = '';
 
       if (!students || students.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="7" style="text-align: center; color: var(--text-staff-secondary); padding: 40px 0;">
-              No registered students found in databases.
-            </td>
-          </tr>
-        `;
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No students found in registry.</td></tr>';
         return;
       }
 
@@ -197,15 +629,10 @@
           <td>Block ${student.hostel_id}</td>
           <td>${student.room_number}</td>
           <td><span class="${statusClass}">${statusLabel}</span></td>
-          <td>₹${balance}</td>
+          <td style="font-weight:700; color: ${student.fee_balance > 0 ? '#ef4444' : 'var(--color-success)'};">₹${balance}</td>
           <td>
-            <button class="btn-logout" style="padding:4px 8px; font-size:0.75rem; border-color:#ef4444; color:#ef4444; opacity:0.5; cursor:not-allowed;" 
-                    onclick="warnRbacRestriction('UPDATE')" title="Blocked by RBAC policy">
-              Edit
-            </button>
-            <button class="btn-logout" style="padding:4px 8px; font-size:0.75rem; border-color:#ef4444; color:#ef4444; opacity:0.5; cursor:not-allowed;" 
-                    onclick="warnRbacRestriction('DELETE')" title="Blocked by RBAC policy">
-              Purge
+            <button class="btn-action edit" onclick="openRecordPaymentModal('${student.student_id}', '${student.full_name}', ${student.fee_balance})">
+              💳 Record Payment
             </button>
           </td>
         `;
@@ -213,11 +640,324 @@
       });
     }
 
-    function warnRbacRestriction(action) {
-      showToast(`RBAC Alert! Central Accountant is strictly blocked from executing ${action} actions on student registries or financial records to prevent internal fraud.`, 'error');
+    // Payment Transaction Local Storage helpers
+    function getPaymentsLog() {
+      const logs = localStorage.getItem('hostelhub_payments');
+      return logs ? JSON.parse(logs) : [];
     }
 
-    // Modal control
+    function addPaymentLog(studentId, studentName, amount, mode) {
+      const logs = getPaymentsLog();
+      logs.push({
+        txn_id: 'TXN' + Date.now().toString().slice(-6),
+        student_id: studentId,
+        student_name: studentName,
+        amount_paid: parseFloat(amount),
+        payment_mode: mode,
+        timestamp: new Date().toISOString()
+      });
+      localStorage.setItem('hostelhub_payments', JSON.stringify(logs));
+    }
+
+    function loadPaymentsLog() {
+      const logs = getPaymentsLog().sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+      const tbody = document.getElementById('paymentTransactionsTableBody');
+      tbody.innerHTML = '';
+
+      if (logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px 0; color:var(--text-staff-secondary);">No ledger payouts recorded.</td></tr>';
+        return;
+      }
+
+      logs.forEach(log => {
+        const timeStr = new Date(log.timestamp).toLocaleString();
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${timeStr}</td>
+          <td><code style="color:#2dd4bf; font-weight:700;">${log.txn_id}</code></td>
+          <td><strong>${log.student_id}</strong></td>
+          <td>${log.student_name}</td>
+          <td style="color:var(--color-success); font-weight:700;">₹${log.amount_paid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+          <td><span style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:4px; font-size:0.8rem;">${log.payment_mode}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function openRecordPaymentModal(id, name, balance) {
+      document.getElementById('payStudentId').value = id;
+      document.getElementById('payStudentIdDisplay').value = id;
+      document.getElementById('payStudentName').value = name;
+      document.getElementById('payStudentBalanceDisplay').value = '₹' + parseFloat(balance).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+      document.getElementById('payAmount').value = '';
+      document.getElementById('payAmount').max = balance;
+      document.getElementById('recordPaymentModal').classList.add('show');
+    }
+
+    function closeRecordPaymentModal() {
+      document.getElementById('recordPaymentModal').classList.remove('show');
+    }
+
+    // Submit payment adjustment
+    document.getElementById('recordPaymentForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const id = document.getElementById('payStudentId').value;
+      const name = document.getElementById('payStudentName').value;
+      const amountPaid = parseFloat(document.getElementById('payAmount').value);
+      const mode = document.getElementById('payMode').value;
+
+      try {
+        const student = HostelHubDB.getStudentById(id);
+        if (!student) {
+          showToast('Student does not exist.', 'error');
+          return;
+        }
+
+        const newBalance = Math.max(0, student.fee_balance - amountPaid);
+        const result = HostelHubDB.updateStudent(id, undefined, newBalance, undefined);
+
+        if (result) {
+          addPaymentLog(id, name, amountPaid, mode);
+          showToast(`Recorded payment of ₹${amountPaid} for student ${name}. New balance: ₹${newBalance}`, 'success');
+          closeRecordPaymentModal();
+          
+          // reload student logs
+          loadStudents();
+          loadPaymentsLog();
+        } else {
+          showToast('Payment record execution failed.', 'error');
+        }
+      } catch (err) {
+        showToast('Local database connection error.', 'error');
+      }
+    });
+
+    // ----------------------------------------------------
+    // STAFF PAYROLL MANAGEMENT
+    // ----------------------------------------------------
+    function getStaffList() {
+      const dbRaw = JSON.parse(localStorage.getItem('hostelhub_db')) || {};
+      return dbRaw.staff_users || [];
+    }
+
+    function loadStaff() {
+      try {
+        const list = getStaffList();
+        populateStaffTable(list);
+      } catch (err) {
+        showToast('Error loading staff lists.', 'error');
+      }
+    }
+
+    function populateStaffTable(staffList) {
+      const tbody = document.getElementById('staffTableBody');
+      tbody.innerHTML = '';
+
+      if (staffList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center;">No staff records seed configured.</td></tr>';
+        return;
+      }
+
+      staffList.forEach(staff => {
+        const baseSal = parseFloat(staff.monthly_salary) || 30000;
+        const block = staff.assigned_hostel ? `Block ${staff.assigned_hostel}` : 'Global';
+
+        const tr = document.createElement('tr');
+        tr.dataset.baseSalary = baseSal;
+        tr.innerHTML = `
+          <td><strong>${staff.user_id}</strong></td>
+          <td>${staff.username}</td>
+          <td><span style="color:#c084fc; font-weight:600;">${staff.user_role}</span></td>
+          <td>${block}</td>
+          <td>₹${baseSal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+          <td style="text-align:center;">
+            <input type="number" class="payroll-days-input present-days" value="30" min="0" max="31" style="width: 60px;" oninput="recalcSalary(this)">
+          </td>
+          <td style="text-align:center;">
+            <input type="number" class="payroll-days-input absent-days" value="0" min="0" max="31" style="width: 60px;" oninput="recalcSalary(this)">
+          </td>
+          <td>
+            <span class="net-salary-val" style="color:var(--color-success); font-weight:700;">₹${baseSal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+          </td>
+          <td>
+            <button class="btn-action pay" onclick="processPayout(this, '${staff.username}', ${baseSal})">
+              Pay Salary
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function recalcSalary(inputEl) {
+      const row = inputEl.closest('tr');
+      const baseSalary = parseFloat(row.dataset.baseSalary);
+      
+      const present = parseFloat(row.querySelector('.present-days').value) || 0;
+      const absent = parseFloat(row.querySelector('.absent-days').value) || 0;
+      
+      const totalDays = present + absent || 1;
+      const calculated = Math.max(0, baseSalary * (present / totalDays));
+      
+      row.querySelector('.net-salary-val').innerText = '₹' + calculated.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+    }
+
+    function processPayout(btn, name, baseVal) {
+      const row = btn.closest('tr');
+      const present = row.querySelector('.present-days').value;
+      const absent = row.querySelector('.absent-days').value;
+      const amountStr = row.querySelector('.net-salary-val').innerText;
+
+      showToast(`Payout Success! Transferred ${amountStr} salary to staff member ${name.toUpperCase()} (Days: ${present} Present, ${absent} Absent).`, 'success');
+    }
+
+    function openAddStaffModal() {
+      document.getElementById('addStaffModal').classList.add('show');
+    }
+
+    function closeAddStaffModal() {
+      document.getElementById('addStaffModal').classList.remove('show');
+      document.getElementById('addStaffForm').reset();
+    }
+
+    function closeStaffCredentialsModal() {
+      document.getElementById('staffCredentialsModal').classList.remove('show');
+    }
+
+    // Submit Staff Registry addition
+    document.getElementById('addStaffForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const name = document.getElementById('staffName').value.trim();
+      const username = document.getElementById('staffUsername').value.trim();
+      const email = document.getElementById('staffEmail').value.trim();
+      const password = document.getElementById('staffPassword').value;
+      const role = document.getElementById('staffRole').value;
+      const block = document.getElementById('staffBlock').value;
+      const salary = parseFloat(document.getElementById('staffSalary').value);
+
+      try {
+        const dbRaw = JSON.parse(localStorage.getItem('hostelhub_db'));
+        const nextIdNum = dbRaw.staff_users.length + 1;
+        const prefix = block !== 'None' ? block : 'GL';
+        const user_id = `${prefix}${role.substring(0, 3).toUpperCase()}${String(nextIdNum).padStart(3, '0')}`;
+
+        const newStaff = {
+          user_id,
+          username,
+          email,
+          password,
+          user_role: role,
+          assigned_hostel: block === 'None' ? null : block,
+          monthly_salary: salary
+        };
+
+        dbRaw.staff_users.push(newStaff);
+        localStorage.setItem('hostelhub_db', JSON.stringify(dbRaw));
+
+        closeAddStaffModal();
+        showToast('Staff registered successfully', 'success');
+
+        document.getElementById('staffOutputId').value = user_id;
+        document.getElementById('staffOutputPassword').value = password;
+        document.getElementById('staffCredentialsModal').classList.add('show');
+
+        loadStaff(); // reload list
+      } catch (err) {
+        showToast('Local database processing error adding staff.', 'error');
+      }
+    });
+
+    // ----------------------------------------------------
+    // KITCHEN & STOCK MODULE
+    // ----------------------------------------------------
+    function loadKitchenMetrics() {
+      try {
+        const result = HostelHubDB.getKitchenMetrics();
+        populateInventoryTable(result.inventory);
+      } catch (err) {
+        showToast('Error loading kitchen metrics.', 'error');
+      }
+    }
+
+    function populateInventoryTable(items) {
+      const tbody = document.getElementById('inventoryTableBody');
+      tbody.innerHTML = '';
+
+      items.forEach(item => {
+        const row = document.createElement('tr');
+        const statusText = item.low_stock_alert ? '<span class="stock-alert-tag">LOW STOCK ALERT</span>' : '<span style="color:var(--color-success); font-weight:600;">HEALTHY</span>';
+        
+        // Dynamically compute progress bar fill percentage
+        const maxCapacity = Math.max(item.stock_quantity_kg * 1.5, 500);
+        const pct = Math.min((item.stock_quantity_kg / maxCapacity) * 100, 100).toFixed(0);
+        
+        row.innerHTML = `
+          <td><strong>${item.ingredient_name}</strong></td>
+          <td>
+            <div class="stock-bar-container">
+              <div class="stock-bar-fill ${item.low_stock_alert ? 'low' : 'normal'}" style="width: ${pct}%;"></div>
+            </div>
+            <span style="font-size:0.8rem; font-weight:600;">${pct}%</span>
+          </td>
+          <td>${item.stock_quantity_kg} KG</td>
+          <td>${item.alert_threshold_kg} KG</td>
+          <td>${statusText}</td>
+          <td>
+            <button class="btn-action edit" onclick="openAdjustStockModal('${item.ingredient_name}', ${item.stock_quantity_kg})">
+              🔧 Adjust Stock
+            </button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function openAdjustStockModal(name, qty) {
+      document.getElementById('adjustIngredientName').value = name;
+      document.getElementById('adjustIngredientDisplay').value = name;
+      document.getElementById('adjustCurrentQty').value = qty;
+      document.getElementById('adjustCurrentQtyDisplay').value = qty + ' KG';
+      document.getElementById('adjustDelta').value = '';
+      document.getElementById('adjustStockModal').classList.add('show');
+    }
+
+    function closeAdjustStockModal() {
+      document.getElementById('adjustStockModal').classList.remove('show');
+    }
+
+    // Submit Stock Adjustment (Refill / Usage Deduct)
+    document.getElementById('adjustStockForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('adjustIngredientName').value;
+      const currentQty = parseFloat(document.getElementById('adjustCurrentQty').value);
+      const action = document.getElementById('adjustAction').value;
+      const delta = parseFloat(document.getElementById('adjustDelta').value);
+
+      let newQty = currentQty;
+      if (action === 'REFILL') {
+        newQty = currentQty + delta;
+      } else {
+        newQty = Math.max(0, currentQty - delta);
+      }
+
+      try {
+        const result = HostelHubDB.updateKitchenStock(name, newQty);
+        if (result) {
+          showToast(`Stock updated successfully. Ingredient '${name}' adjusted to ${newQty} KG.`, 'success');
+          closeAdjustStockModal();
+          loadKitchenMetrics();
+        } else {
+          showToast('Failed to adjust ingredient stock.', 'error');
+        }
+      } catch (err) {
+        showToast('Database error processing stock adjustments.', 'error');
+      }
+    });
+
+    // ----------------------------------------------------
+    // STUDENT REGISTRY CRUD OVERRIDES
+    // ----------------------------------------------------
     function openAddStudentModal() {
       document.getElementById('addStudentModal').classList.add('show');
     }
@@ -231,7 +971,6 @@
       document.getElementById('credentialsModal').classList.remove('show');
     }
 
-    // Handle Form Submit
     document.getElementById('addStudentForm').addEventListener('submit', (e) => {
       e.preventDefault();
       
@@ -247,7 +986,6 @@
         closeAddStudentModal();
         showToast('Student registered successfully', 'success');
         
-        // Render credentials modal
         document.getElementById('outputUserId').value = newStudent.student_id;
         document.getElementById('outputPassword').value = newStudent.password;
         document.getElementById('credentialsModal').classList.add('show');
@@ -255,7 +993,6 @@
         loadStudents(); // reload list
       } catch (err) {
         showToast('Error registering student to local database.', 'error');
-        console.error(err);
       }
     });
 
