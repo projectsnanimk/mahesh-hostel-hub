@@ -80,6 +80,46 @@
           <div class="qr-meta-pill" id="qrMealWindow">Active Slot: Calculating...</div>
         </div>
       </div>
+
+      <!-- Today's Mess Menu Card -->
+      <div class="card menu-card" style="grid-column: span 12; margin-top: 10px;">
+        <h2 class="card-title" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+          <span>🍽️ Today's Mess Menu (<span id="menuDayName">Today</span>)</span>
+          <span style="font-size:0.8rem; font-weight:600; background:rgba(79, 70, 229, 0.1); color:#4f46e5; padding:6px 14px; border-radius:50px;" id="menuLabel">Active Menu</span>
+        </h2>
+        
+        <div class="menu-sections-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); gap:20px;">
+          <!-- Breakfast Card -->
+          <div class="menu-meal-card" id="meal-breakfast" style="background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:12px; padding:20px; transition:all 0.3s ease;">
+            <div style="font-weight:700; color:#4f46e5; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; font-size:0.95rem;">
+              <span>🌅 BREAKFAST</span>
+              <span style="font-size:0.75rem; font-weight:normal; color:#64748b;">7:30 AM - 9:00 AM</span>
+            </div>
+            <ul id="menuBreakfastList" style="list-style-type:none; padding-left:0; display:flex; flex-direction:column; gap:8px; font-size:0.9rem; font-weight:500; color:#334155;">
+            </ul>
+          </div>
+
+          <!-- Lunch Card -->
+          <div class="menu-meal-card" id="meal-lunch" style="background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:12px; padding:20px; transition:all 0.3s ease;">
+            <div style="font-weight:700; color:#10b981; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; font-size:0.95rem;">
+              <span>☀️ LUNCH</span>
+              <span style="font-size:0.75rem; font-weight:normal; color:#64748b;">11:30 AM - 2:00 PM</span>
+            </div>
+            <ul id="menuLunchList" style="list-style-type:none; padding-left:0; display:flex; flex-direction:column; gap:8px; font-size:0.9rem; font-weight:500; color:#334155;">
+            </ul>
+          </div>
+
+          <!-- Dinner Card -->
+          <div class="menu-meal-card" id="meal-dinner" style="background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:12px; padding:20px; transition:all 0.3s ease;">
+            <div style="font-weight:700; color:#f59e0b; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; font-size:0.95rem;">
+              <span>🌙 DINNER</span>
+              <span style="font-size:0.75rem; font-weight:normal; color:#64748b;">8:00 PM - 9:00 PM</span>
+            </div>
+            <ul id="menuDinnerList" style="list-style-type:none; padding-left:0; display:flex; flex-direction:column; gap:8px; font-size:0.9rem; font-weight:500; color:#334155;">
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -155,6 +195,9 @@
 
           // Generate QR code once
           generateQR();
+          
+          // Render today's mess menu
+          updateMenuDisplay();
 
         } else {
           showToast('Error loading profile record from browser database.', 'error');
@@ -200,6 +243,128 @@
         colorDark: "#0f172a",
         colorLight: "#ffffff",
         correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    // Weekly Mess Menu Data Registry
+    const WEEKLY_MENU = {
+      Sunday: {
+        breakfast: ['Bread and Jam', 'Boiled Egg / Pulihora', 'Chana Podi', '☕ Milk or Coffee'],
+        lunch: ['Rice', 'Aloo Boiled Curry', 'Chutney, Rasam', 'Majjiga Pulusu'],
+        dinner: ['🍗 Non-Veg: Rice, Chicken Curry, Rasam, Buttermilk', '🥦 Veg Options: Veg Biryani, Paneer Curry, Pappu, Gobi 65, Onion Raitha']
+      },
+      Monday: {
+        breakfast: ['Dosa', 'Chutney & Red Chutney', '☕ Milk or Coffee'],
+        lunch: ['Rice', 'Appalam (Papad)', 'Beetroot / Carrot Fry', 'Chutney & Sambar', 'Sweet & Curd'],
+        dinner: ['Chapati', 'Chana Masala', 'Rice & Pappu', 'Rasam, Buttermilk']
+      },
+      Tuesday: {
+        breakfast: ['Idli', 'Chutney & Red Chutney', '☕ Milk or Coffee'],
+        lunch: ['Rice', 'Boiled Egg', 'Aaku Koora Pappu', 'Chutney & Cabbage 65', 'Rasam & Curd'],
+        dinner: ['Dosa with Chutney, Sambar, Red Chutney', 'Rice', 'Any Boiled Fry', 'Buttermilk']
+      },
+      Wednesday: {
+        breakfast: ['Bonda', 'Chutney & Red Chutney', '☕ Milk or Coffee'],
+        lunch: ['Rice, Curd', 'Aloo Boiled Curry', 'Chutney & Sambar', 'Appalam (Papad)'],
+        dinner: ['🍗 Non-Veg: Rice, Chicken Curry, Rasam, Buttermilk', '🥦 Veg Options: Rice, Pappu, Gobi 65, Rasam, Buttermilk']
+      },
+      Thursday: {
+        breakfast: ['Tomato Bath / Semiya', 'Chutney', '☕ Milk or Coffee'],
+        lunch: ['Veg Biryani', 'Aloo Kurma / Tomato Gravy', 'Onion Raitha & Sweet', 'Curd Rice & Pickle'],
+        dinner: ['Chapati & Rice', 'Aloo Kurma', 'Pappu & Rasam', 'Buttermilk']
+      },
+      Friday: {
+        breakfast: ['Poori', 'Aloo Curry', '☕ Milk or Coffee'],
+        lunch: ['Rice, Boiled Egg, Curd', 'Sorakaya Pappu', 'Gobi 65 & Rasam', 'Tomato Onion Curry'],
+        dinner: ['Idli with Chutney, Sambar, Red Chutney', 'Rice', 'Any Boiled Fry', 'Rasam & Buttermilk']
+      },
+      Saturday: {
+        breakfast: ['Dosa, Chutney, Red Ch. OR Pongal, Chutney, Sambar', '☕ Milk or Coffee'],
+        lunch: ['Rice, Curd', 'Dondakaya Boiled Fry', 'Sambar & Chutney', 'Appalam (Papad)'],
+        dinner: ['Coconut Rice & Aloo Kurma OR Tomato Rice & Veg Pulao', 'Curd Rice & Pickle']
+      }
+    };
+
+    function updateMenuDisplay() {
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const todayDayName = days[new Date().getDay()];
+      document.getElementById('menuDayName').innerText = todayDayName;
+      
+      const menu = WEEKLY_MENU[todayDayName] || WEEKLY_MENU['Monday'];
+      
+      populateMenuList('menuBreakfastList', menu.breakfast);
+      populateMenuList('menuLunchList', menu.lunch);
+      populateMenuList('menuDinnerList', menu.dinner);
+      
+      // Highlight current active meal card
+      const activeWindow = getMealWindow();
+      
+      // Reset card borders
+      const brCard = document.getElementById('meal-breakfast');
+      const lnCard = document.getElementById('meal-lunch');
+      const dnCard = document.getElementById('meal-dinner');
+      
+      brCard.style.borderColor = '#e2e8f0';
+      brCard.style.boxShadow = 'none';
+      brCard.style.backgroundColor = '#f8fafc';
+      
+      lnCard.style.borderColor = '#e2e8f0';
+      lnCard.style.boxShadow = 'none';
+      lnCard.style.backgroundColor = '#f8fafc';
+      
+      dnCard.style.borderColor = '#e2e8f0';
+      dnCard.style.boxShadow = 'none';
+      dnCard.style.backgroundColor = '#f8fafc';
+      
+      if (activeWindow === 'MORNING') {
+        brCard.style.borderColor = '#4f46e5';
+        brCard.style.boxShadow = '0 0 15px rgba(79, 70, 229, 0.12)';
+        brCard.style.backgroundColor = '#f5f3ff';
+        document.getElementById('menuLabel').innerText = 'Active Slot: Breakfast';
+      } else if (activeWindow === 'AFTERNOON') {
+        lnCard.style.borderColor = '#10b981';
+        lnCard.style.boxShadow = '0 0 15px rgba(16, 185, 129, 0.12)';
+        lnCard.style.backgroundColor = '#ecfdf5';
+        document.getElementById('menuLabel').innerText = 'Active Slot: Lunch';
+      } else if (activeWindow === 'EVENING') {
+        dnCard.style.borderColor = '#f59e0b';
+        dnCard.style.boxShadow = '0 0 15px rgba(245, 158, 11, 0.12)';
+        dnCard.style.backgroundColor = '#fffbeb';
+        document.getElementById('menuLabel').innerText = 'Active Slot: Dinner';
+      } else {
+        document.getElementById('menuLabel').innerText = 'Mess Closed';
+      }
+    }
+
+    function populateMenuList(elementId, items) {
+      const ul = document.getElementById(elementId);
+      ul.innerHTML = '';
+      items.forEach(item => {
+        const li = document.createElement('li');
+        li.style.display = 'flex';
+        li.style.alignItems = 'center';
+        li.style.gap = '8px';
+        
+        let bullet = '🔸';
+        if (item.toLowerCase().includes('coffee') || item.toLowerCase().includes('milk')) {
+          bullet = '☕';
+        } else if (item.toLowerCase().includes('non-veg') || item.toLowerCase().includes('chicken')) {
+          bullet = '🍗';
+        } else if (item.toLowerCase().includes('veg options') || item.toLowerCase().includes('paneer') || item.toLowerCase().includes('veg biryani')) {
+          bullet = '🥦';
+        } else if (item.toLowerCase().includes('dosa') || item.toLowerCase().includes('idli') || item.toLowerCase().includes('poori') || item.toLowerCase().includes('chapati') || item.toLowerCase().includes('bonda') || item.toLowerCase().includes('pongal')) {
+          bullet = '🥞';
+        } else if (item.toLowerCase().includes('rice') || item.toLowerCase().includes('biryani')) {
+          bullet = '🍚';
+        }
+        
+        let cleanText = item;
+        if (item.startsWith('🍗') || item.startsWith('🥦') || item.startsWith('☕')) {
+          bullet = '';
+        }
+        
+        li.innerHTML = `<span>${bullet}</span><span>${cleanText}</span>`;
+        ul.appendChild(li);
       });
     }
 
