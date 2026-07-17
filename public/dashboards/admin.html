@@ -279,6 +279,7 @@
       <button class="tab-btn active" onclick="switchTab('tab-metrics')">📊 Dashboard Overview</button>
       <button class="tab-btn" onclick="switchTab('tab-kitchen')">🍳 Kitchen & Inventory</button>
       <button class="tab-btn" onclick="switchTab('tab-students')">👥 Student Registry</button>
+      <button class="tab-btn" onclick="switchTab('tab-payroll')">👥 Staff Payroll</button>
     </div>
 
     <!-- ----------------------------------------------------------------------
@@ -427,6 +428,40 @@
               <tr>
                 <td colspan="8" style="text-align: center; color: var(--text-staff-secondary); padding: 40px 0;">
                   Loading student profiles...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+    <!-- ----------------------------------------------------------------------
+         TAB 4: STAFF PAYROLL
+         ---------------------------------------------------------------------- -->
+    <div id="tab-payroll" class="tab-content">
+      <div class="card">
+        <div class="table-actions">
+          <h2 class="card-title">Staff Registry & Payroll Cockpit</h2>
+          <button class="btn-primary" onclick="openAddStaffModal()" style="background:#7c3aed;">+ Add Staff Member</button>
+        </div>
+        
+        <div class="asset-table-wrapper">
+          <table class="asset-table">
+            <thead>
+              <tr>
+                <th>Staff ID</th>
+                <th>Name</th>
+                <th>System Role</th>
+                <th>Assigned Block</th>
+                <th>Base Monthly Salary</th>
+                <th style="width: 90px; text-align: center;">Present Days</th>
+                <th style="width: 90px; text-align: center;">Absent Days</th>
+                <th>Net Calculated Salary</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="staffTableBody">
+              <tr>
+                <td colspan="9" style="text-align: center; color: var(--text-staff-secondary); padding: 40px 0;">
+                  Retrieving staff records...
                 </td>
               </tr>
             </tbody>
@@ -657,6 +692,89 @@
     </div>
   </div>
 
+  <!-- Add Staff Modal -->
+  <div class="modal" id="addStaffModal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeAddStaffModal()">×</span>
+      <h2 class="login-title" style="margin-bottom: 20px;">Add New Staff Profile</h2>
+      
+      <form id="addStaffForm">
+        <div class="form-group">
+          <label class="form-label" for="staffName">Full Name</label>
+          <input class="form-input" type="text" id="staffName" placeholder="e.g. K. RAMESH WARDEN" required>
+        </div>
+
+        <div class="form-group" style="display: flex; gap: 15px;">
+          <div style="flex: 1;">
+            <label class="form-label" for="staffUsername">Login Username</label>
+            <input class="form-input" type="text" id="staffUsername" placeholder="e.g. ramesh_warden" required>
+          </div>
+          <div style="flex: 1;">
+            <label class="form-label" for="staffEmail">Email Address</label>
+            <input class="form-input" type="email" id="staffEmail" placeholder="e.g. ramesh@hostelhub.com" required>
+          </div>
+        </div>
+
+        <div class="form-group" style="display: flex; gap: 15px;">
+          <div style="flex: 1;">
+            <label class="form-label" for="staffRole">System Role</label>
+            <select class="form-input" id="staffRole" required>
+              <option value="WARDEN">WARDEN (Block Caretaker)</option>
+              <option value="WATCHMAN">WATCHMAN (Gate Control)</option>
+              <option value="ACCOUNTANT">ACCOUNTANT (Financials)</option>
+              <option value="ADMIN">ADMIN (System Head)</option>
+            </select>
+          </div>
+          <div style="flex: 1;">
+            <label class="form-label" for="staffBlock">Assigned Block</label>
+            <select class="form-input" id="staffBlock" required>
+              <option value="None">Global (None)</option>
+              <option value="M1">M1 Residential</option>
+              <option value="M2">M2 Residential</option>
+              <option value="M3">M3 Residential</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="display: flex; gap: 15px;">
+          <div style="flex: 1;">
+            <label class="form-label" for="staffSalary">Base Monthly Salary (₹)</label>
+            <input class="form-input" type="number" step="0.01" id="staffSalary" placeholder="e.g. 45000" required>
+          </div>
+          <div style="flex: 1;">
+            <label class="form-label" for="staffPassword">Portal Password</label>
+            <input class="form-input" type="text" id="staffPassword" placeholder="e.g. PWD1234" required>
+          </div>
+        </div>
+
+        <button class="btn-submit" type="submit" style="background:#7c3aed;">Create Personnel Record</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Staff Credentials Output Modal -->
+  <div class="modal" id="staffCredentialsModal">
+    <div class="modal-content" style="border: 1px solid var(--color-success); border-top: 4px solid var(--color-success);">
+      <span class="modal-close" onclick="closeStaffCredentialsModal()">×</span>
+      <h2 class="login-title" style="color:var(--color-success); margin-bottom: 8px;">Staff Added Successfully</h2>
+      <p style="color: var(--text-staff-secondary); font-size: 0.9rem; margin-bottom: 25px;">
+        Personnel record added to database. Copy the generated staff credentials:
+      </p>
+
+      <div class="form-group">
+        <label class="form-label">Generated Staff ID</label>
+        <input class="form-input" type="text" id="staffOutputId" readonly style="background: #111827; border-color: var(--color-success); font-weight:700;">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Security Password</label>
+        <input class="form-input" type="text" id="staffOutputPassword" readonly style="background: #111827; border-color: var(--color-success); font-weight:700;">
+      </div>
+
+      <button class="btn-submit" onclick="closeStaffCredentialsModal()" style="background:var(--color-success); margin-top:10px;">Acknowledge & Close</button>
+    </div>
+  </div>
+
   <div class="toast-container" id="toastContainer"></div>
 
   <script>
@@ -702,9 +820,10 @@
         }
         document.getElementById('navName').innerText = `${payload.username.toUpperCase()} (Global Admin)`;
         
-        // Load All metrics and student tables
+        // Load All metrics, staff and student tables
         loadKitchenMetrics();
         loadStudents();
+        loadStaff();
       } catch (e) {
         logout();
       }
@@ -1054,6 +1173,142 @@
         loadKitchenMetrics(); // Update counts if changed
       } catch (err) {
         showToast('Local database error during student registration.', 'error');
+      }
+    });
+
+    // ----------------------------------------------------
+    // STAFF PAYROLL MANAGEMENT
+    // ----------------------------------------------------
+    function getStaffList() {
+      const dbRaw = JSON.parse(localStorage.getItem('hostelhub_db')) || {};
+      return dbRaw.staff_users || [];
+    }
+
+    function loadStaff() {
+      try {
+        const list = getStaffList();
+        populateStaffTable(list);
+      } catch (err) {
+        showToast('Error loading staff lists.', 'error');
+      }
+    }
+
+    function populateStaffTable(staffList) {
+      const tbody = document.getElementById('staffTableBody');
+      tbody.innerHTML = '';
+
+      if (staffList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center;">No staff records seed configured.</td></tr>';
+        return;
+      }
+
+      staffList.forEach(staff => {
+        const baseSal = parseFloat(staff.monthly_salary) || 30000;
+        const block = staff.assigned_hostel ? `Block ${staff.assigned_hostel}` : 'Global';
+
+        const tr = document.createElement('tr');
+        tr.dataset.baseSalary = baseSal;
+        tr.innerHTML = `
+          <td><strong>${staff.user_id}</strong></td>
+          <td>${staff.username}</td>
+          <td><span style="color:#c084fc; font-weight:600;">${staff.user_role}</span></td>
+          <td>${block}</td>
+          <td>₹${baseSal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+          <td style="text-align:center;">
+            <input type="number" class="payroll-days-input present-days" value="30" min="0" max="31" style="width: 60px;" oninput="recalcSalary(this)">
+          </td>
+          <td style="text-align:center;">
+            <input type="number" class="payroll-days-input absent-days" value="0" min="0" max="31" style="width: 60px;" oninput="recalcSalary(this)">
+          </td>
+          <td>
+            <span class="net-salary-val" style="color:var(--color-success); font-weight:700;">₹${baseSal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+          </td>
+          <td>
+            <button class="btn-action pay" onclick="processPayout(this, '${staff.username}', ${baseSal})">
+              Pay Salary
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function recalcSalary(inputEl) {
+      const row = inputEl.closest('tr');
+      const baseSalary = parseFloat(row.dataset.baseSalary);
+      
+      const present = parseFloat(row.querySelector('.present-days').value) || 0;
+      const absent = parseFloat(row.querySelector('.absent-days').value) || 0;
+      
+      const totalDays = present + absent || 1;
+      const calculated = Math.max(0, baseSalary * (present / totalDays));
+      
+      row.querySelector('.net-salary-val').innerText = '₹' + calculated.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+    }
+
+    function processPayout(btn, name, baseVal) {
+      const row = btn.closest('tr');
+      const present = row.querySelector('.present-days').value;
+      const absent = row.querySelector('.absent-days').value;
+      const amountStr = row.querySelector('.net-salary-val').innerText;
+
+      showToast(`Payout Success! Transferred ${amountStr} salary to staff member ${name.toUpperCase()} (Days: ${present} Present, ${absent} Absent).`, 'success');
+    }
+
+    function openAddStaffModal() {
+      document.getElementById('addStaffModal').classList.add('show');
+    }
+
+    function closeAddStaffModal() {
+      document.getElementById('addStaffModal').classList.remove('show');
+      document.getElementById('addStaffForm').reset();
+    }
+
+    function closeStaffCredentialsModal() {
+      document.getElementById('staffCredentialsModal').classList.remove('show');
+    }
+
+    // Submit Staff Registry addition
+    document.getElementById('addStaffForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const name = document.getElementById('staffName').value.trim();
+      const username = document.getElementById('staffUsername').value.trim();
+      const email = document.getElementById('staffEmail').value.trim();
+      const password = document.getElementById('staffPassword').value;
+      const role = document.getElementById('staffRole').value;
+      const block = document.getElementById('staffBlock').value;
+      const salary = parseFloat(document.getElementById('staffSalary').value);
+
+      try {
+        const dbRaw = JSON.parse(localStorage.getItem('hostelhub_db'));
+        const nextIdNum = dbRaw.staff_users.length + 1;
+        const prefix = block !== 'None' ? block : 'GL';
+        const user_id = `${prefix}${role.substring(0, 3).toUpperCase()}${String(nextIdNum).padStart(3, '0')}`;
+
+        const newStaff = {
+          user_id,
+          username,
+          email,
+          password,
+          user_role: role,
+          assigned_hostel: block === 'None' ? null : block,
+          monthly_salary: salary
+        };
+
+        dbRaw.staff_users.push(newStaff);
+        localStorage.setItem('hostelhub_db', JSON.stringify(dbRaw));
+
+        closeAddStaffModal();
+        showToast('Staff registered successfully', 'success');
+
+        document.getElementById('staffOutputId').value = user_id;
+        document.getElementById('staffOutputPassword').value = password;
+        document.getElementById('staffCredentialsModal').classList.add('show');
+
+        loadStaff(); // reload list
+      } catch (err) {
+        showToast('Local database processing error adding staff.', 'error');
       }
     });
 
