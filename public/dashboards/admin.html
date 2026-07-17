@@ -493,43 +493,143 @@
 
   <!-- Register Student Modal -->
   <div class="modal" id="addStudentModal">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width: 750px; padding: 30px;">
       <span class="modal-close" onclick="closeAddStudentModal()">×</span>
       <h2 class="login-title" style="margin-bottom: 20px;">Register New Student</h2>
       
       <form id="addStudentForm">
-        <div class="form-group">
-          <label class="form-label" for="fullName">Full Name</label>
-          <input class="form-input" type="text" id="fullName" placeholder="e.g. MOHAN KRISHNA" required>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          
+          <!-- Column 1: Personal Details -->
+          <div>
+            <h4 style="border-left:3px solid #7c3aed; padding-left:8px; margin-bottom:15px; color:#c084fc;">Personal Information</h4>
+            <div class="form-group">
+              <label class="form-label" for="fullName">Name of the Student *</label>
+              <input class="form-input" type="text" id="fullName" placeholder="e.g. MOHAN KRISHNA" required>
+            </div>
+            
+            <div class="form-group" style="display:flex; gap:10px;">
+              <div style="flex:1;">
+                <label class="form-label" for="year">Year *</label>
+                <select class="form-input" id="year" required>
+                  <option value="1">1st Year</option>
+                  <option value="2">2nd Year</option>
+                  <option value="3">3rd Year</option>
+                  <option value="4">4th Year</option>
+                </select>
+              </div>
+              <div style="flex:1;">
+                <label class="form-label" for="dob">Date of Birth *</label>
+                <input class="form-input" type="date" id="dob" required>
+              </div>
+            </div>
+
+            <div class="form-group" style="display:flex; gap:10px;">
+              <div style="flex:1;">
+                <label class="form-label" for="parentName">Parent's Name *</label>
+                <input class="form-input" type="text" id="parentName" placeholder="Father or Mother" required>
+              </div>
+              <div style="flex:1;">
+                <label class="form-label" for="bloodGroup">Blood Group</label>
+                <input class="form-input" type="text" id="bloodGroup" placeholder="e.g. O+">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="aadharNo">Aadhar No *</label>
+              <input class="form-input" type="text" id="aadharNo" placeholder="12-digit Aadhar" required pattern="\d{12}" title="Aadhar number must be exactly 12 digits.">
+            </div>
+
+            <div class="form-group" style="display:flex; gap:10px;">
+              <div style="flex:1;">
+                <label class="form-label" for="studentContact">Student Contact *</label>
+                <input class="form-input" type="tel" id="studentContact" placeholder="Mobile Number" required>
+              </div>
+              <div style="flex:1;">
+                <label class="form-label" for="parentContact">Parent Contact *</label>
+                <input class="form-input" type="tel" id="parentContact" placeholder="Mobile Number" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="emailId">Email ID</label>
+              <input class="form-input" type="email" id="emailId" placeholder="e.g. student@gmail.com">
+            </div>
+          </div>
+
+          <!-- Column 2: Academics, Address & Payments -->
+          <div>
+            <h4 style="border-left:3px solid #7c3aed; padding-left:8px; margin-bottom:15px; color:#c084fc;">Hostel, Stream & Financials</h4>
+            
+            <div class="form-group" style="display:flex; gap:10px;">
+              <div style="flex:1;">
+                <label class="form-label" for="stream">Stream / Branch *</label>
+                <input class="form-input" type="text" id="stream" placeholder="e.g. B.Tech CSE" required>
+              </div>
+              <div style="flex:1;">
+                <label class="form-label" for="hostelId">Hostel Block *</label>
+                <select class="form-input" id="hostelId" required>
+                  <option value="M1">M1 Block</option>
+                  <option value="M2">M2 Block</option>
+                  <option value="M3">M3 Block</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group" style="display:flex; gap:10px;">
+              <div style="flex:1;">
+                <label class="form-label" for="roomNumber">Room Number *</label>
+                <input class="form-input" type="text" id="roomNumber" placeholder="e.g. 101A" required>
+              </div>
+              <div style="flex:1;">
+                <label class="form-label" for="totalFee">Total Course Fee *</label>
+                <input class="form-input" type="number" step="0.01" id="totalFee" placeholder="Total Fee Amount" required min="0" oninput="calculateBalance()">
+              </div>
+            </div>
+
+            <div class="form-group" style="display:flex; gap:10px;">
+              <div style="flex:1;">
+                <label class="form-label" for="amountPaid">Amount Paid *</label>
+                <input class="form-input" type="number" step="0.01" id="amountPaid" placeholder="Amount Paid Today" required min="0" oninput="calculateBalance()">
+              </div>
+              <div style="flex:1;">
+                <label class="form-label" for="pendingBalance">Pending Balance</label>
+                <input class="form-input" type="number" step="0.01" id="pendingBalance" readonly style="background:#1e293b; color:var(--text-staff-secondary); border-color:var(--border-staff);">
+              </div>
+            </div>
+
+            <!-- Initial Payment Mode Details -->
+            <div id="initialPaymentDetails" style="display: none; border: 1px dashed var(--border-staff); padding: 12px; border-radius: 8px; margin-bottom: 15px;">
+              <div class="form-group" style="margin-bottom: 10px;">
+                <label class="form-label" for="regPayMode">Payment Mode *</label>
+                <select class="form-input" id="regPayMode">
+                  <option value="UPI">UPI (GPay / PhonePe)</option>
+                  <option value="Cash">Hard Cash</option>
+                  <option value="Card">Credit/Debit Card</option>
+                  <option value="Net Banking">Net Banking</option>
+                  <option value="Bank Transfer">Bank Transfer (Account Number)</option>
+                  <option value="Loan">Loan</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" for="regPayNotes">Transaction notes / UTR / Reference *</label>
+                <input class="form-input" type="text" id="regPayNotes" placeholder="e.g. UTR 12345678 / Cash memo">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="fullAddress">Full Address *</label>
+              <textarea class="form-input" id="fullAddress" placeholder="Enter Full Permanent Address" required style="height: 60px; font-family: var(--font-family); resize: none;"></textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="pincode">Pincode *</label>
+              <input class="form-input" type="text" id="pincode" placeholder="6-digit PIN" required pattern="\d{6}" title="Pincode must be exactly 6 digits.">
+            </div>
+          </div>
         </div>
 
-        <div class="form-group" style="display: flex; gap: 15px;">
-          <div style="flex: 1;">
-            <label class="form-label" for="hostelId">Hostel Block</label>
-            <select class="form-input" id="hostelId" required>
-              <option value="M1">M1 Block</option>
-              <option value="M2">M2 Block</option>
-              <option value="M3">M3 Block</option>
-            </select>
-          </div>
-          <div style="flex: 1;">
-            <label class="form-label" for="roomNumber">Room Number</label>
-            <input class="form-input" type="text" id="roomNumber" placeholder="e.g. 101A" required>
-          </div>
-        </div>
-
-        <div class="form-group" style="display: flex; gap: 15px;">
-          <div style="flex: 1;">
-            <label class="form-label" for="feeBalance">Fee Balance (₹)</label>
-            <input class="form-input" type="number" step="0.01" id="feeBalance" placeholder="e.g. 4500" required>
-          </div>
-          <div style="flex: 1;">
-            <label class="form-label" for="dob">Date of Birth</label>
-            <input class="form-input" type="date" id="dob" required>
-          </div>
-        </div>
-
-        <button class="btn-submit" type="submit" style="background:#7c3aed;">Register Student</button>
+        <button class="btn-submit" type="submit" style="background:#7c3aed; margin-top:20px; font-size:1.05rem; font-weight:700;">Complete Student Registration</button>
       </form>
     </div>
   </div>
@@ -861,11 +961,49 @@
     // Add Student functions
     function openAddStudentModal() {
       document.getElementById('addStudentModal').classList.add('show');
+      calculateBalance();
     }
 
     function closeAddStudentModal() {
       document.getElementById('addStudentModal').classList.remove('show');
       document.getElementById('addStudentForm').reset();
+      calculateBalance();
+    }
+
+    function calculateBalance() {
+      const total = parseFloat(document.getElementById('totalFee').value) || 0;
+      const paid = parseFloat(document.getElementById('amountPaid').value) || 0;
+      const pending = Math.max(0, total - paid);
+      document.getElementById('pendingBalance').value = pending.toFixed(2);
+      
+      const detailsDiv = document.getElementById('initialPaymentDetails');
+      const payMode = document.getElementById('regPayMode');
+      const payNotes = document.getElementById('regPayNotes');
+      
+      if (paid > 0) {
+        detailsDiv.style.display = 'block';
+        payMode.setAttribute('required', 'true');
+        payNotes.setAttribute('required', 'true');
+      } else {
+        detailsDiv.style.display = 'none';
+        payMode.removeAttribute('required');
+        payNotes.removeAttribute('required');
+      }
+    }
+
+    function addPaymentLog(studentId, studentName, amount, mode, notes) {
+      const logs = localStorage.getItem('hostelhub_payments');
+      const parsedLogs = logs ? JSON.parse(logs) : [];
+      parsedLogs.push({
+        txn_id: 'TXN' + Date.now().toString().slice(-6),
+        student_id: studentId,
+        student_name: studentName,
+        amount_paid: parseFloat(amount),
+        payment_mode: mode,
+        notes: notes,
+        timestamp: new Date().toISOString()
+      });
+      localStorage.setItem('hostelhub_payments', JSON.stringify(parsedLogs));
     }
 
     function closeCredentialsModal() {
@@ -877,12 +1015,34 @@
       const full_name = document.getElementById('fullName').value.trim();
       const hostel_id = document.getElementById('hostelId').value;
       const room_number = document.getElementById('roomNumber').value.trim();
-      const fee_balance = parseFloat(document.getElementById('feeBalance').value);
+      const totalFee = parseFloat(document.getElementById('totalFee').value) || 0;
+      const amountPaid = parseFloat(document.getElementById('amountPaid').value) || 0;
+      const pendingBalance = Math.max(0, totalFee - amountPaid);
       const dob = document.getElementById('dob').value;
 
+      const extraData = {
+        year: document.getElementById('year').value,
+        parent_name: document.getElementById('parentName').value.trim(),
+        blood_group: document.getElementById('bloodGroup').value.trim(),
+        aadhar_no: document.getElementById('aadharNo').value.trim(),
+        student_contact: document.getElementById('studentContact').value.trim(),
+        parent_contact: document.getElementById('parentContact').value.trim(),
+        email_id: document.getElementById('emailId').value.trim(),
+        stream: document.getElementById('stream').value.trim(),
+        full_address: document.getElementById('fullAddress').value.trim(),
+        pincode: document.getElementById('pincode').value.trim(),
+        total_fee: totalFee
+      };
+
       try {
-        const newStudent = HostelHubDB.createStudent(full_name, hostel_id, room_number, fee_balance, dob);
+        const newStudent = HostelHubDB.createStudent(full_name, hostel_id, room_number, pendingBalance, dob, extraData);
         
+        if (amountPaid > 0) {
+          const mode = document.getElementById('regPayMode').value;
+          const notes = document.getElementById('regPayNotes').value.trim();
+          addPaymentLog(newStudent.student_id, newStudent.full_name, amountPaid, mode, notes);
+        }
+
         closeAddStudentModal();
         showToast('Student registered successfully', 'success');
         
@@ -891,6 +1051,7 @@
         document.getElementById('credentialsModal').classList.add('show');
 
         loadStudents();
+        loadKitchenMetrics(); // Update counts if changed
       } catch (err) {
         showToast('Local database error during student registration.', 'error');
       }

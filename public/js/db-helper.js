@@ -154,7 +154,7 @@ const db = {
     return getDb().students;
   },
 
-  createStudent: (fullName, hostelId, roomNumber, feeBalance, dob) => {
+  createStudent: (fullName, hostelId, roomNumber, feeBalance, dob, extraData = {}) => {
     const dbState = getDb();
     const todayStr = new Date().toISOString().split('T')[0];
     
@@ -170,7 +170,8 @@ const db = {
       fee_balance: parseFloat(feeBalance),
       current_status: 'INSIDE',
       dob,
-      registration_date: todayStr
+      registration_date: todayStr,
+      ...extraData
     };
 
     dbState.students.push(newStudent);
