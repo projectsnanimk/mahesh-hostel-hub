@@ -694,30 +694,30 @@
 
   <!-- Add Staff Modal -->
   <div class="modal" id="addStaffModal">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width: 600px; padding: 25px;">
       <span class="modal-close" onclick="closeAddStaffModal()">×</span>
       <h2 class="login-title" style="margin-bottom: 20px;">Add New Staff Profile</h2>
       
       <form id="addStaffForm">
         <div class="form-group">
-          <label class="form-label" for="staffName">Full Name</label>
+          <label class="form-label" for="staffName">Full Name *</label>
           <input class="form-input" type="text" id="staffName" placeholder="e.g. K. RAMESH WARDEN" required>
         </div>
 
         <div class="form-group" style="display: flex; gap: 15px;">
           <div style="flex: 1;">
-            <label class="form-label" for="staffUsername">Login Username</label>
+            <label class="form-label" for="staffUsername">Login Username *</label>
             <input class="form-input" type="text" id="staffUsername" placeholder="e.g. ramesh_warden" required>
           </div>
           <div style="flex: 1;">
             <label class="form-label" for="staffEmail">Email Address</label>
-            <input class="form-input" type="email" id="staffEmail" placeholder="e.g. ramesh@hostelhub.com" required>
+            <input class="form-input" type="email" id="staffEmail" placeholder="e.g. ramesh@hostelhub.com">
           </div>
         </div>
 
         <div class="form-group" style="display: flex; gap: 15px;">
           <div style="flex: 1;">
-            <label class="form-label" for="staffRole">System Role</label>
+            <label class="form-label" for="staffRole">System Role *</label>
             <select class="form-input" id="staffRole" required>
               <option value="WARDEN">WARDEN (Block Caretaker)</option>
               <option value="WATCHMAN">WATCHMAN (Gate Control)</option>
@@ -726,7 +726,7 @@
             </select>
           </div>
           <div style="flex: 1;">
-            <label class="form-label" for="staffBlock">Assigned Block</label>
+            <label class="form-label" for="staffBlock">Assigned Block *</label>
             <select class="form-input" id="staffBlock" required>
               <option value="None">Global (None)</option>
               <option value="M1">M1 Residential</option>
@@ -738,11 +738,33 @@
 
         <div class="form-group" style="display: flex; gap: 15px;">
           <div style="flex: 1;">
-            <label class="form-label" for="staffSalary">Base Monthly Salary (₹)</label>
+            <label class="form-label" for="staffPhone">Phone Number *</label>
+            <input class="form-input" type="tel" id="staffPhone" placeholder="Mobile Number" required>
+          </div>
+          <div style="flex: 1;">
+            <label class="form-label" for="staffDoj">Date of Joining *</label>
+            <input class="form-input" type="date" id="staffDoj" required>
+          </div>
+        </div>
+
+        <div class="form-group" style="display: flex; gap: 15px;">
+          <div style="flex: 1;">
+            <label class="form-label" for="staffAadhar">Aadhar Number *</label>
+            <input class="form-input" type="text" id="staffAadhar" placeholder="12-digit Aadhar" required pattern="\d{12}" title="Aadhar must be exactly 12 digits.">
+          </div>
+          <div style="flex: 1;">
+            <label class="form-label" for="staffPhoto">Upload Photo *</label>
+            <input class="form-input" type="file" id="staffPhoto" accept="image/*" required style="padding: 5px;">
+          </div>
+        </div>
+
+        <div class="form-group" style="display: flex; gap: 15px;">
+          <div style="flex: 1;">
+            <label class="form-label" for="staffSalary">Base Monthly Salary (₹) *</label>
             <input class="form-input" type="number" step="0.01" id="staffSalary" placeholder="e.g. 45000" required>
           </div>
           <div style="flex: 1;">
-            <label class="form-label" for="staffPassword">Portal Password</label>
+            <label class="form-label" for="staffPassword">Portal Password *</label>
             <input class="form-input" type="text" id="staffPassword" placeholder="e.g. PWD1234" required>
           </div>
         </div>
@@ -772,6 +794,80 @@
       </div>
 
       <button class="btn-submit" onclick="closeStaffCredentialsModal()" style="background:var(--color-success); margin-top:10px;">Acknowledge & Close</button>
+    </div>
+  </div>
+
+  <!-- Staff ID Card Modal -->
+  <div class="modal" id="staffIdCardModal">
+    <div class="modal-content" style="max-width: 420px; padding: 25px; text-align: center; background: #0f172a; border: 1px solid var(--border-staff); border-radius: 16px;">
+      <span class="modal-close" onclick="closeStaffIdCardModal()">×</span>
+      <h3 class="login-title" style="margin-bottom: 20px; color: #38bdf8;">Generated ID Card</h3>
+      
+      <!-- Card Container for Print/Display -->
+      <div id="idCardPrintArea" style="background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%); border: 3px solid #7c3aed; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); position: relative; overflow: hidden; text-align: center; color: #fff; font-family: 'Outfit', sans-serif; margin-bottom: 20px;">
+        
+        <!-- Background accents -->
+        <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: rgba(124, 58, 237, 0.15); border-radius: 50%; filter: blur(30px);"></div>
+        <div style="position: absolute; bottom: -50px; left: -50px; width: 150px; height: 150px; background: rgba(56, 189, 248, 0.15); border-radius: 50%; filter: blur(30px);"></div>
+        
+        <!-- Header -->
+        <div style="font-weight: 800; font-size: 1.1rem; letter-spacing: 1px; color: #fff; margin-bottom: 5px;">MAHESH HOSTELS</div>
+        <div style="font-size: 0.65rem; color: #38bdf8; letter-spacing: 2px; font-weight: 700; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">STAFF IDENTITY CARD</div>
+        
+        <!-- Photo -->
+        <div style="width: 120px; height: 120px; margin: 0 auto 15px auto; border-radius: 50%; border: 3px solid #7c3aed; overflow: hidden; background: #334155; display: flex; align-items: center; justify-content: center;">
+          <img id="cardPhotoImg" src="" alt="Staff Photo" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+          <div id="cardPhotoPlaceholder" style="font-size: 3rem; color: #64748b;">👤</div>
+        </div>
+        
+        <!-- Name & Role -->
+        <div id="cardName" style="font-size: 1.3rem; font-weight: 700; color: #fff; margin-bottom: 4px;">MOHAN RAO</div>
+        <div id="cardRole" style="display: inline-block; background: #7c3aed; color: #fff; font-size: 0.75rem; font-weight: 800; padding: 4px 12px; border-radius: 9999px; margin-bottom: 15px; letter-spacing: 0.5px;">WARDEN</div>
+        
+        <!-- Details grid -->
+        <div style="text-align: left; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 12px; font-size: 0.8rem; line-height: 1.6;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="color: #94a3b8; font-weight: 600;">Staff ID:</span>
+            <span id="cardIdVal" style="color: #fff; font-family: monospace; font-weight: 700;">M1WAR004</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="color: #94a3b8; font-weight: 600;">Phone:</span>
+            <span id="cardPhoneVal" style="color: #fff;">+91 9876543210</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="color: #94a3b8; font-weight: 600;">DOJ:</span>
+            <span id="cardDojVal" style="color: #fff;">18-07-2026</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #94a3b8; font-weight: 600;">Aadhar:</span>
+            <span id="cardAadharVal" style="color: #fff; font-family: monospace;">XXXX-XXXX-1234</span>
+          </div>
+        </div>
+        
+        <!-- Footer / Signature area -->
+        <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 0.6rem; color: #94a3b8;">
+          <div style="text-align: left;">
+            <div>ISSUING AUTHORITY</div>
+            <div style="font-weight: 700; color: #38bdf8; margin-top: 2px;">MAHESH HOSTELS PVT LTD</div>
+          </div>
+          <div style="border-top: 1px dashed rgba(255,255,255,0.3); width: 80px; padding-top: 4px; text-align: center;">
+            SIGNATURE
+          </div>
+        </div>
+      </div>
+
+      <!-- Security Portal Access Credentials -->
+      <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; font-size: 0.8rem; text-align: left; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1);">
+        <div style="color: #2dd4bf; font-weight: 700; margin-bottom: 4px;">🔐 Security Portal Access Credentials:</div>
+        <div><strong>Username:</strong> <span id="portalUserDisplay">ramesh_warden</span></div>
+        <div><strong>Temporary Password:</strong> <span id="portalPassDisplay">PWD1234</span></div>
+      </div>
+      
+      <!-- Actions -->
+      <div style="display: flex; gap: 10px;">
+        <button class="btn-submit" onclick="printIdCard()" style="background: #0284c7; flex: 1; margin-top: 0;">🖨️ Print / Save ID</button>
+        <button class="btn-submit" onclick="closeStaffIdCardModal()" style="background: #475569; width: 100px; margin-top: 0;">Close</button>
+      </div>
     </div>
   </div>
 
@@ -1210,7 +1306,7 @@
         tr.dataset.baseSalary = baseSal;
         tr.innerHTML = `
           <td><strong>${staff.user_id}</strong></td>
-          <td>${staff.username}</td>
+          <td>${staff.name || staff.username}</td>
           <td><span style="color:#c084fc; font-weight:600;">${staff.user_role}</span></td>
           <td>${block}</td>
           <td>₹${baseSal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
@@ -1224,9 +1320,14 @@
             <span class="net-salary-val" style="color:var(--color-success); font-weight:700;">₹${baseSal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
           </td>
           <td>
-            <button class="btn-action pay" onclick="processPayout(this, '${staff.username}', ${baseSal})">
-              Pay Salary
-            </button>
+            <div style="display:flex; gap: 8px;">
+              <button class="btn-action pay" onclick="processPayout(this, '${staff.username}', ${baseSal})">
+                Pay Salary
+              </button>
+              <button class="btn-action edit" onclick="showExistingStaffIdCard('${staff.user_id}')" style="border-color:#38bdf8; color:#38bdf8;">
+                📇 ID Card
+              </button>
+            </div>
           </td>
         `;
         tbody.appendChild(tr);
@@ -1279,38 +1380,185 @@
       const role = document.getElementById('staffRole').value;
       const block = document.getElementById('staffBlock').value;
       const salary = parseFloat(document.getElementById('staffSalary').value);
+      
+      const phone = document.getElementById('staffPhone').value.trim();
+      const doj = document.getElementById('staffDoj').value;
+      const aadhar = document.getElementById('staffAadhar').value.trim();
+      const photoFile = document.getElementById('staffPhoto').files[0];
+      const reader = new FileReader();
 
-      try {
-        const dbRaw = JSON.parse(localStorage.getItem('hostelhub_db'));
-        const nextIdNum = dbRaw.staff_users.length + 1;
-        const prefix = block !== 'None' ? block : 'GL';
-        const user_id = `${prefix}${role.substring(0, 3).toUpperCase()}${String(nextIdNum).padStart(3, '0')}`;
+      const proceedSubmit = (photoBase64) => {
+        try {
+          const dbRaw = JSON.parse(localStorage.getItem('hostelhub_db')) || { students: [], staff_users: [], inventory: [] };
+          const nextIdNum = dbRaw.staff_users.length + 1;
+          const prefix = block !== 'None' ? block : 'GL';
+          const user_id = `${prefix}${role.substring(0, 3).toUpperCase()}${String(nextIdNum).padStart(3, '0')}`;
 
-        const newStaff = {
-          user_id,
-          username,
-          email,
-          password,
-          user_role: role,
-          assigned_hostel: block === 'None' ? null : block,
-          monthly_salary: salary
+          const newStaff = {
+            user_id,
+            username,
+            email,
+            password,
+            user_role: role,
+            assigned_hostel: block === 'None' ? null : block,
+            monthly_salary: salary,
+            name,
+            phone,
+            doj,
+            aadhar,
+            photo: photoBase64
+          };
+
+          dbRaw.staff_users.push(newStaff);
+          localStorage.setItem('hostelhub_db', JSON.stringify(dbRaw));
+
+          closeAddStaffModal();
+          showToast('Staff registered successfully! Generating ID Card...', 'success');
+
+          // Trigger ID Card display automatically
+          renderIdCardModal(newStaff);
+
+          loadStaff(); // reload list
+        } catch (err) {
+          showToast('Local database processing error adding staff.', 'error');
+          console.error(err);
+        }
+      };
+
+      if (photoFile) {
+        reader.onload = function(event) {
+          proceedSubmit(event.target.result);
         };
-
-        dbRaw.staff_users.push(newStaff);
-        localStorage.setItem('hostelhub_db', JSON.stringify(dbRaw));
-
-        closeAddStaffModal();
-        showToast('Staff registered successfully', 'success');
-
-        document.getElementById('staffOutputId').value = user_id;
-        document.getElementById('staffOutputPassword').value = password;
-        document.getElementById('staffCredentialsModal').classList.add('show');
-
-        loadStaff(); // reload list
-      } catch (err) {
-        showToast('Local database processing error adding staff.', 'error');
+        reader.readAsDataURL(photoFile);
+      } else {
+        proceedSubmit(null);
       }
     });
+
+    function showExistingStaffIdCard(userId) {
+      try {
+        const dbRaw = JSON.parse(localStorage.getItem('hostelhub_db')) || {};
+        const staffList = dbRaw.staff_users || [];
+        const staff = staffList.find(s => s.user_id === userId);
+        
+        if (!staff) {
+          showToast('Staff member not found.', 'error');
+          return;
+        }
+
+        renderIdCardModal(staff);
+      } catch (err) {
+        showToast('Error displaying ID Card.', 'error');
+      }
+    }
+
+    function renderIdCardModal(staff) {
+      document.getElementById('cardName').innerText = (staff.name || staff.username).toUpperCase();
+      document.getElementById('cardRole').innerText = staff.user_role;
+      
+      const cardRoleEl = document.getElementById('cardRole');
+      const cardPrintArea = document.getElementById('idCardPrintArea');
+      
+      if (staff.user_role === 'ADMIN') {
+        cardRoleEl.style.background = '#7c3aed';
+        cardPrintArea.style.borderColor = '#7c3aed';
+      } else if (staff.user_role === 'WARDEN') {
+        cardRoleEl.style.background = '#10b981';
+        cardPrintArea.style.borderColor = '#10b981';
+      } else if (staff.user_role === 'WATCHMAN') {
+        cardRoleEl.style.background = '#f59e0b';
+        cardPrintArea.style.borderColor = '#f59e0b';
+      } else {
+        cardRoleEl.style.background = '#0d9488';
+        cardPrintArea.style.borderColor = '#0d9488';
+      }
+
+      document.getElementById('cardIdVal').innerText = staff.user_id;
+      document.getElementById('cardPhoneVal').innerText = staff.phone || '-';
+      document.getElementById('cardDojVal').innerText = staff.doj ? new Date(staff.doj).toLocaleDateString('en-IN') : '-';
+      
+      const aadhar = staff.aadhar || '';
+      if (aadhar.length === 12) {
+        document.getElementById('cardAadharVal').innerText = 'XXXX-XXXX-' + aadhar.substring(8);
+      } else {
+        document.getElementById('cardAadharVal').innerText = aadhar || '-';
+      }
+
+      const imgEl = document.getElementById('cardPhotoImg');
+      const placeholderEl = document.getElementById('cardPhotoPlaceholder');
+      if (staff.photo) {
+        imgEl.src = staff.photo;
+        imgEl.style.display = 'block';
+        placeholderEl.style.display = 'none';
+      } else {
+        imgEl.src = '';
+        imgEl.style.display = 'none';
+        placeholderEl.style.display = 'block';
+      }
+
+      document.getElementById('portalUserDisplay').innerText = staff.username;
+      document.getElementById('portalPassDisplay').innerText = staff.password;
+
+      document.getElementById('staffIdCardModal').classList.add('show');
+    }
+
+    function closeStaffIdCardModal() {
+      document.getElementById('staffIdCardModal').classList.remove('show');
+    }
+
+    function printIdCard() {
+      const cardHtml = document.getElementById('idCardPrintArea').outerHTML;
+      const win = window.open('', '_blank', 'width=600,height=800');
+      
+      const roleText = document.getElementById('cardRole').innerText;
+      let roleColor = '#7c3aed';
+      if (roleText === 'WARDEN') roleColor = '#10b981';
+      else if (roleText === 'WATCHMAN') roleColor = '#f59e0b';
+      else if (roleText === 'ACCOUNTANT') roleColor = '#0d9488';
+
+      win.document.write(`
+        <html>
+          <head>
+            <title>Staff ID Card Print - Mahesh Hostels</title>
+            <style>
+              body {
+                background: #fff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 90vh;
+                margin: 0;
+                font-family: sans-serif;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+              #idCardPrintArea {
+                width: 320px !important;
+                background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%) !important;
+                border: 3px solid \${roleColor} !important;
+                border-radius: 12px !important;
+                padding: 25px !important;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
+                position: relative !important;
+                overflow: hidden !important;
+                text-align: center !important;
+                color: #fff !important;
+              }
+            </style>
+          </head>
+          <body>
+            \${cardHtml}
+            <script>
+              setTimeout(() => {
+                window.print();
+                window.close();
+              }, 500);
+            <\/script>
+          </body>
+        </html>
+      `);
+      win.document.close();
+    }
 
     function logout() {
       localStorage.clear();
