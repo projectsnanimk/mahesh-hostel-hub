@@ -65,29 +65,18 @@
         <p style="margin-top: 15px; font-size: 0.8rem; opacity: 0.8;">Payments processed through the Central Accountant.</p>
       </div>
 
-      <!-- Dynamic Mess Token Generator (QR) -->
+      <!-- Mess Token Generator (QR) -->
       <div class="card qr-card" style="grid-column: span 12;">
         <h2 class="card-title">Live Mess Validation Token</h2>
         <p style="color: var(--text-student-secondary); max-width: 600px; margin-bottom: 20px;">
-          Present this dynamic QR code at the centralized mess counter. To prevent static screenshot sharing, this token auto-refreshes every 30 seconds and binds to the active schedule window.
+          Present this unique static QR code at the centralized mess counter. It is uniquely generated for today's active meal slot (Morning, Afternoon, or Evening) and can only be scanned once.
         </p>
 
         <div class="qr-wrapper">
           <div id="qrcode"></div>
-          <div class="qr-overlay-expired" id="qrOverlayExpired">
-            <span style="font-size: 2rem;">⏳</span>
-            <span>TOKEN EXPIRED</span>
-          </div>
         </div>
 
         <div class="qr-timer-container" style="max-width: 300px;">
-          <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600;">
-            <span>Dynamic Refresh</span>
-            <span id="timerText">30s</span>
-          </div>
-          <div class="qr-timer-bar">
-            <div class="qr-timer-progress" id="timerProgress"></div>
-          </div>
           <div class="qr-meta-pill" id="qrMealWindow">Active Slot: Calculating...</div>
         </div>
       </div>
@@ -99,8 +88,6 @@
   <script>
     let token = localStorage.getItem('hostelhub_token');
     let studentData = null;
-    let qrTimerInterval = null;
-    let qrTimeLeft = 30;
 
     // Verify token exists and type is correct
     if (!token || localStorage.getItem('hostelhub_user_type') !== 'STUDENT') {
@@ -166,8 +153,8 @@
           document.getElementById('profileDob').innerText = new Date(studentData.dob).toLocaleDateString();
           document.getElementById('profileBalance').innerText = '₹' + parseFloat(studentData.fee_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
-          // Start generating QR codes
-          startQrGenerator();
+          // Generate QR code once
+          generateQR();
 
         } else {
           showToast('Error loading profile record from browser database.', 'error');
@@ -198,7 +185,7 @@
       const payload = {
         student_id: studentData.student_id,
         meal_window: activeWindow,
-        timestamp: Date.now()
+        date: new Date().toISOString().split('T')[0]
       };
 
       // Clear QR box
@@ -214,39 +201,6 @@
         colorLight: "#ffffff",
         correctLevel: QRCode.CorrectLevel.M
       });
-    }
-
-    // Refresh countdown loop
-    function startQrGenerator() {
-      // First generation
-      generateQR();
-      
-      // Interval countdown timer
-      clearInterval(qrTimerInterval);
-      qrTimeLeft = 30;
-      
-      const timerProgress = document.getElementById('timerProgress');
-      const timerText = document.getElementById('timerText');
-      const overlay = document.getElementById('qrOverlayExpired');
-
-      qrTimerInterval = setInterval(() => {
-        qrTimeLeft--;
-        timerText.innerText = `${qrTimeLeft}s`;
-        
-        // Update bar width
-        const pct = (qrTimeLeft / 30) * 100;
-        timerProgress.style.width = `${pct}%`;
-
-        if (qrTimeLeft <= 0) {
-          // Temporarily show overlay to emulate expiration transition
-          overlay.classList.add('show');
-          setTimeout(() => {
-            overlay.classList.remove('show');
-            generateQR();
-            qrTimeLeft = 30;
-          }, 300);
-        }
-      }, 1000);
     }
 
     function logout() {

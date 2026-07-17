@@ -214,7 +214,7 @@ const db = {
       return { status: 'DENIED', ui_color: 'RED', message: 'Scan Rejected: Unreadable QR code payload.' };
     }
 
-    const { student_id, meal_window, timestamp } = qrData;
+    const { student_id, meal_window, date } = qrData;
     const student = dbState.students.find(s => s.student_id === student_id);
 
     if (!student) {
@@ -230,10 +230,10 @@ const db = {
       };
     }
 
-    // Check QR expiration (30 seconds)
-    const drift = Math.abs(Date.now() - timestamp);
-    if (drift > 30000) {
-      return { status: 'DENIED', ui_color: 'RED', message: 'Verification Failure: QR Code has expired. Auto-refreshes every 30 seconds.' };
+    // Verify QR matches the current date
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (date !== todayStr) {
+      return { status: 'DENIED', ui_color: 'RED', message: `Scan Denied: QR Code is dated '${date}' (Expired). Today is '${todayStr}'.` };
     }
 
     // Verify meal window matches live schedule
@@ -251,11 +251,10 @@ const db = {
     }
 
     // Check for duplicates today
-    const todayStr = new Date().toDateString();
     const hasAlreadyScanned = dbState.mess_attendance_logs.find(log => 
       log.student_id === student_id && 
       log.meal_window === activeWindow && 
-      new Date(log.scanned_at).toDateString() === todayStr
+      new Date(log.scanned_at).toISOString().split('T')[0] === todayStr
     );
 
     if (hasAlreadyScanned) {
@@ -286,6 +285,8 @@ const db = {
       timestamp: newLog.scanned_at
     };
   },
+
+
 
   // Central Kitchen Metrics Aggregator
   getKitchenMetrics: () => {
