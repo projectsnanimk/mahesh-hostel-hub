@@ -220,11 +220,12 @@
                 <th>Student Name</th>
                 <th>Amount Paid</th>
                 <th>Payment Mode</th>
+                <th>Notes / Ref ID</th>
               </tr>
             </thead>
             <tbody id="paymentTransactionsTableBody">
               <tr>
-                <td colspan="6" style="text-align: center; color: var(--text-staff-secondary); padding: 20px 0;">
+                <td colspan="7" style="text-align: center; color: var(--text-staff-secondary); padding: 20px 0;">
                   No transactions recorded yet today.
                 </td>
               </tr>
@@ -387,8 +388,15 @@
               <option value="Cash">Hard Cash</option>
               <option value="Card">Credit/Debit Card</option>
               <option value="Net Banking">Net Banking</option>
+              <option value="Bank Transfer">Bank Transfer (Account Number)</option>
+              <option value="Loan">Loan</option>
             </select>
           </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="payNotes">Payment Notes / Transaction Ref / UTR Number</label>
+          <input class="form-input" type="text" id="payNotes" placeholder="e.g. UTR 123456789 / Cash details / SBI Loan ref" required>
         </div>
 
         <button class="btn-submit" type="submit" style="background:#0d9488;">Acknowledge Payment Receipt</button>
@@ -646,7 +654,7 @@
       return logs ? JSON.parse(logs) : [];
     }
 
-    function addPaymentLog(studentId, studentName, amount, mode) {
+    function addPaymentLog(studentId, studentName, amount, mode, notes) {
       const logs = getPaymentsLog();
       logs.push({
         txn_id: 'TXN' + Date.now().toString().slice(-6),
@@ -654,6 +662,7 @@
         student_name: studentName,
         amount_paid: parseFloat(amount),
         payment_mode: mode,
+        notes: notes,
         timestamp: new Date().toISOString()
       });
       localStorage.setItem('hostelhub_payments', JSON.stringify(logs));
@@ -665,13 +674,14 @@
       tbody.innerHTML = '';
 
       if (logs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px 0; color:var(--text-staff-secondary);">No ledger payouts recorded.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px 0; color:var(--text-staff-secondary);">No ledger payouts recorded.</td></tr>';
         return;
       }
 
       logs.forEach(log => {
         const timeStr = new Date(log.timestamp).toLocaleString();
         const tr = document.createElement('tr');
+        const displayNotes = log.notes ? log.notes : '-';
         tr.innerHTML = `
           <td>${timeStr}</td>
           <td><code style="color:#2dd4bf; font-weight:700;">${log.txn_id}</code></td>
@@ -679,6 +689,7 @@
           <td>${log.student_name}</td>
           <td style="color:var(--color-success); font-weight:700;">₹${log.amount_paid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
           <td><span style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:4px; font-size:0.8rem;">${log.payment_mode}</span></td>
+          <td style="color:var(--text-staff-secondary); font-size:0.85rem;" title="${displayNotes}">${displayNotes}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -691,6 +702,7 @@
       document.getElementById('payStudentBalanceDisplay').value = '₹' + parseFloat(balance).toLocaleString('en-IN', { minimumFractionDigits: 2 });
       document.getElementById('payAmount').value = '';
       document.getElementById('payAmount').max = balance;
+      document.getElementById('payNotes').value = '';
       document.getElementById('recordPaymentModal').classList.add('show');
     }
 
@@ -705,6 +717,7 @@
       const name = document.getElementById('payStudentName').value;
       const amountPaid = parseFloat(document.getElementById('payAmount').value);
       const mode = document.getElementById('payMode').value;
+      const notes = document.getElementById('payNotes').value.trim();
 
       try {
         const student = HostelHubDB.getStudentById(id);
@@ -717,7 +730,7 @@
         const result = HostelHubDB.updateStudent(id, undefined, newBalance, undefined);
 
         if (result) {
-          addPaymentLog(id, name, amountPaid, mode);
+          addPaymentLog(id, name, amountPaid, mode, notes);
           showToast(`Recorded payment of ₹${amountPaid} for student ${name}. New balance: ₹${newBalance}`, 'success');
           closeRecordPaymentModal();
           
