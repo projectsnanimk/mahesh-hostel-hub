@@ -76,8 +76,30 @@
           <div id="qrcode"></div>
         </div>
 
-        <div class="qr-timer-container" style="max-width: 300px;">
-          <div class="qr-meta-pill" id="qrMealWindow">Active Slot: Calculating...</div>
+        <div class="qr-timer-container" style="max-width: 450px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; align-items: center;">
+          <div class="qr-meta-pill" id="qrMealWindow" style="width: 100%; text-align: center;">Active Slot: Calculating...</div>
+          
+          <!-- Copy String for Emulator -->
+          <div style="width: 100%; display: flex; gap: 8px;">
+            <input type="text" id="qrTokenString" readonly style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #000; padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; font-family: monospace;" placeholder="QR Code Payload">
+            <button class="btn-action edit" onclick="copyQrToken()" style="white-space: nowrap; font-size: 0.8rem; padding: 0 12px; border-radius: 6px; border-color: #4f46e5; color: #4f46e5;">📋 Copy String</button>
+          </div>
+
+          <!-- Demo Mode Override -->
+          <div style="background: #f8fafc; border: 1px dashed #cbd5e1; padding: 12px; border-radius: 8px; width: 100%; text-align: left;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; color: #4f46e5; cursor: pointer; margin-bottom: 8px;">
+              <input type="checkbox" id="demoModeCheckbox" onchange="toggleDemoMode()" style="cursor: pointer;"> 
+              🔧 Enable Demo / Testing Override
+            </label>
+            <div id="demoControls" style="display: none; align-items: center; gap: 8px;">
+              <span style="font-size: 0.8rem; color: #64748b;">Force Active Slot:</span>
+              <select id="demoSlotSelect" onchange="generateQR()" style="background: #fff; border: 1px solid #cbd5e1; color: #334155; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">
+                <option value="MORNING">Breakfast (Morning)</option>
+                <option value="AFTERNOON">Lunch (Afternoon)</option>
+                <option value="EVENING">Dinner (Evening)</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -213,16 +235,18 @@
     function generateQR() {
       if (!studentData) return;
 
-      const activeWindow = getMealWindow();
+      const demoMode = document.getElementById('demoModeCheckbox').checked;
+      const activeWindow = demoMode ? document.getElementById('demoSlotSelect').value : getMealWindow();
       const metaContainer = document.getElementById('qrMealWindow');
       
       if (!activeWindow) {
         metaContainer.innerText = getMealWindowLabel(null);
         document.getElementById('qrcode').innerHTML = '<div style="color:var(--color-danger);font-weight:600;padding:20px;">Central Mess Closed<br>QR Code Deactivated</div>';
+        document.getElementById('qrTokenString').value = '';
         return;
       }
 
-      metaContainer.innerText = `Active Slot: ${getMealWindowLabel(activeWindow)}`;
+      metaContainer.innerText = `${demoMode ? '⚠️ [DEMO ACTIVE] ' : ''}Active Slot: ${getMealWindowLabel(activeWindow)}`;
       
       // Calculate token content matching Schema specifications
       const payload = {
@@ -231,19 +255,46 @@
         date: new Date().toISOString().split('T')[0]
       };
 
+      if (demoMode) {
+        payload.demo_mode = true;
+      }
+
+      const tokenString = JSON.stringify(payload);
+      document.getElementById('qrTokenString').value = tokenString;
+
       // Clear QR box
       const qrBox = document.getElementById('qrcode');
       qrBox.innerHTML = '';
       
       // Instantiate class from CDN
       new QRCode(qrBox, {
-        text: JSON.stringify(payload),
+        text: tokenString,
         width: 180,
         height: 180,
         colorDark: "#0f172a",
         colorLight: "#ffffff",
         correctLevel: QRCode.CorrectLevel.M
       });
+    }
+
+    function toggleDemoMode() {
+      const checkbox = document.getElementById('demoModeCheckbox');
+      const controls = document.getElementById('demoControls');
+      if (checkbox.checked) {
+        controls.style.display = 'flex';
+      } else {
+        controls.style.display = 'none';
+      }
+      generateQR();
+    }
+
+    function copyQrToken() {
+      const input = document.getElementById('qrTokenString');
+      if (input.value) {
+        input.select();
+        document.execCommand('copy');
+        showToast('QR Token string copied to clipboard!', 'success');
+      }
     }
 
     // Weekly Mess Menu Data Registry

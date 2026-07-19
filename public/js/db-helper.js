@@ -247,8 +247,9 @@ const db = {
       return { status: 'DENIED', ui_color: 'RED', message: `Scan Denied: QR Code is dated '${date}' (Expired). Today is '${todayStr}'.` };
     }
 
-    // Verify meal window matches live schedule
-    const activeWindow = getSystemMealWindow();
+    // Verify meal window matches live schedule (bypass hourly slots check if in demo/testing mode)
+    const isDemo = qrData.demo_mode === true;
+    const activeWindow = isDemo ? meal_window.toUpperCase() : getSystemMealWindow();
     if (!activeWindow) {
       return { status: 'DENIED', ui_color: 'RED', message: 'Scan Denied: Central Kitchen is closed. No active meal window.' };
     }
