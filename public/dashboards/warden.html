@@ -6,6 +6,8 @@
   <title>Warden Console - HostelHub</title>
   <link rel="stylesheet" href="/css/styles.css">
   <script src="/js/db-helper.js"></script>
+  <!-- HTML5 QR Code Scanner Library from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body class="dark-theme">
   <header class="app-header">
@@ -37,6 +39,19 @@
           <div style="font-size: 3rem; margin-bottom: 8px;">📷</div>
           <div style="font-size: 0.95rem; font-weight:600; color: var(--text-staff-secondary);" id="scannerStatus">
             Scanner Standby: Awaiting Input
+          </div>
+        </div>
+
+        <!-- Live Camera Scanner Controls -->
+        <div style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; gap: 10px;">
+            <button class="btn-submit" id="startCamBtn" onclick="startCameraScanner()" style="background: #0284c7; margin-top: 0; font-size: 0.95rem; flex: 1; font-weight:700;">📷 Open Live Camera Scanner</button>
+            <button class="btn-submit" id="stopCamBtn" onclick="stopCameraScanner()" style="background: #ef4444; margin-top: 0; font-size: 0.95rem; display: none; width: 120px; font-weight:700;">🛑 Stop Camera</button>
+          </div>
+          
+          <!-- Camera Feed Reader View -->
+          <div id="cameraReaderContainer" style="display: none; border: 2px solid var(--border-staff); border-radius: var(--radius-sm); overflow: hidden; background: #000; position: relative;">
+            <div id="cameraReader" style="width: 100%;"></div>
           </div>
         </div>
 
@@ -143,11 +158,69 @@
     const visualizer = document.getElementById('scanVisualizer');
     const statusText = document.getElementById('scannerStatus');
     const laser = document.getElementById('scanLaser');
+    let html5QrcodeScanner = null;
+
+    function startCameraScanner() {
+      document.getElementById('cameraReaderContainer').style.display = 'block';
+      document.getElementById('startCamBtn').style.display = 'none';
+      document.getElementById('stopCamBtn').style.display = 'block';
+      
+      statusText.innerText = "Camera Starting: Please grant permissions...";
+      
+      html5QrcodeScanner = new Html5Qrcode("cameraReader");
+      const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+      
+      html5QrcodeScanner.start(
+        { facingMode: "environment" },
+        config,
+        (decodedText, decodedResult) => {
+          showToast("QR Code Scanned successfully!", "success");
+          document.getElementById('qrToken').value = decodedText;
+          stopCameraScanner();
+          validateToken(decodedText);
+        },
+        (errorMessage) => {}
+      ).then(() => {
+        statusText.innerText = "Camera Scanner Active. Point at Student QR code.";
+      }).catch(err => {
+        console.error("Camera startup failed: ", err);
+        statusText.innerText = "Camera Access Blocked / Failed";
+        statusText.style.color = "var(--color-danger)";
+        showToast("Could not open camera. Verify device permissions.", "error");
+        stopCameraScanner();
+      });
+    }
+
+    function stopCameraScanner() {
+      if (html5QrcodeScanner) {
+        html5QrcodeScanner.stop().then(() => {
+          html5QrcodeScanner.clear();
+          html5QrcodeScanner = null;
+          resetUIForStop();
+        }).catch(err => {
+          console.warn("Failed to stop camera scanner cleanly: ", err);
+          resetUIForStop();
+        });
+      } else {
+        resetUIForStop();
+      }
+    }
+
+    function resetUIForStop() {
+      document.getElementById('cameraReaderContainer').style.display = 'none';
+      document.getElementById('startCamBtn').style.display = 'block';
+      document.getElementById('stopCamBtn').style.display = 'none';
+      statusText.innerText = "Scanner Standby: Awaiting Input";
+      statusText.style.color = "var(--text-staff-secondary)";
+    }
 
     document.getElementById('scanQrForm').addEventListener('submit', (e) => {
       e.preventDefault();
-      
       const qr_token = document.getElementById('qrToken').value.trim();
+      validateToken(qr_token);
+    });
+
+    function validateToken(qr_token) {
       statusText.innerText = "Verifying Token Handshake...";
       laser.style.background = "#eab308"; // Scanning color yellow
 
@@ -195,7 +268,7 @@
           console.error(err);
         }
       }, 500);
-    });
+    }
 
     function addScanToSessionLog(studentId, timestamp, isSuccess, details) {
       const container = document.getElementById('scanLogsContainer');
