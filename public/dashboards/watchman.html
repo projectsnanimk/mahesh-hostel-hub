@@ -54,15 +54,7 @@
             <input class="form-input" type="text" id="studentId" placeholder="e.g., M1120726001" required autocomplete="off">
           </div>
 
-          <div class="form-group">
-            <label class="form-label" for="actionType">Movement Event</label>
-            <select class="form-input" id="actionType" required>
-              <option value="OUT">Check OUT (Exit Block)</option>
-              <option value="IN">Check IN (Enter Block)</option>
-            </select>
-          </div>
-
-          <button class="btn-submit" type="submit" style="background:var(--staff-accent);">Write Gate Log Entry</button>
+          <button class="btn-submit" type="submit" style="background:#0d9488;">Verify Student ID</button>
         </form>
       </div>
 
@@ -79,6 +71,32 @@
       </div>
     </div>
   </main>
+
+  <!-- Gate Scan Action Modal -->
+  <div class="modal" id="gateScanModal">
+    <div class="modal-content" style="max-width: 420px; text-align: center; padding: 25px; border-top: 4px solid var(--staff-accent);">
+      <span class="modal-close" onclick="closeGateScanModal()">×</span>
+      <h2 class="login-title" style="margin-bottom: 15px;">Verify Student Gate Entry</h2>
+      
+      <!-- Student Details Display -->
+      <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border: 1px solid var(--border-staff); margin-bottom: 20px; text-align: left;">
+        <div style="font-size: 0.9rem; margin-bottom: 6px;"><span style="color: var(--text-staff-secondary); font-size: 0.8rem; font-weight: 600;">STUDENT ID:</span> <strong id="scanStudentId" style="color: #2dd4bf; font-family: monospace;">-</strong></div>
+        <div style="font-size: 0.9rem; margin-bottom: 6px;"><span style="color: var(--text-staff-secondary); font-size: 0.8rem; font-weight: 600;">FULL NAME:</span> <strong id="scanStudentName" style="color: white;">-</strong></div>
+        <div style="font-size: 0.9rem; margin-bottom: 6px;"><span style="color: var(--text-staff-secondary); font-size: 0.8rem; font-weight: 600;">HOSTEL BLOCK:</span> <strong id="scanStudentBlock" style="color: white;">-</strong></div>
+        <div style="font-size: 0.9rem;"><span style="color: var(--text-staff-secondary); font-size: 0.8rem; font-weight: 600;">ROOM NUMBER:</span> <strong id="scanStudentRoom" style="color: white;">-</strong></div>
+      </div>
+
+      <!-- Selection Action Buttons -->
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <button class="btn-submit" onclick="submitGateScan('IN')" style="background: #10b981; color: white; margin-top: 0; font-size: 1.05rem; font-weight: 700; padding: 12px; border-radius: var(--radius-sm); border: none; cursor: pointer; transition: background 0.2s;">
+          🟢 CHECK IN (Enter Block)
+        </button>
+        <button class="btn-submit" onclick="submitGateScan('OUT')" style="background: #ef4444; color: white; margin-top: 0; font-size: 1.05rem; font-weight: 700; padding: 12px; border-radius: var(--radius-sm); border: none; cursor: pointer; transition: background 0.2s;">
+          🔴 CHECK OUT (Exit Block)
+        </button>
+      </div>
+    </div>
+  </div>
 
   <div class="toast-container" id="toastContainer"></div>
 
@@ -175,24 +193,59 @@
       });
     }
 
-    // Submit log gate event
-    document.getElementById('gateLogForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      
-      const student_id = document.getElementById('studentId').value.trim();
-      const action_type = document.getElementById('actionType').value;
+    let pendingScanStudentId = '';
+
+    function openGateScanModal(studentId) {
+      try {
+        const student = HostelHubDB.getStudentById(studentId);
+        if (!student) {
+          showToast(`Student '${studentId}' does not exist.`, 'error');
+          return;
+        }
+
+        // Scope lock check
+        if (watchmanProfile.assigned_hostel && student.hostel_id.toUpperCase() !== watchmanProfile.assigned_hostel.toUpperCase()) {
+          showToast(`Security Violation: Student belongs to Block ${student.hostel_id}. You are locked to Block ${watchmanProfile.assigned_hostel}.`, 'error');
+          return;
+        }
+
+        pendingScanStudentId = studentId;
+
+        // Populate details inside the modal
+        document.getElementById('scanStudentId').innerText = student.student_id;
+        document.getElementById('scanStudentName').innerText = student.full_name;
+        document.getElementById('scanStudentBlock').innerText = `Block ${student.hostel_id}`;
+        document.getElementById('scanStudentRoom').innerText = student.room_number;
+
+        // Open modal
+        document.getElementById('gateScanModal').classList.add('show');
+      } catch (err) {
+        showToast('Error retrieving student profile from browser database.', 'error');
+      }
+    }
+
+    function closeGateScanModal() {
+      document.getElementById('gateScanModal').classList.remove('show');
+      pendingScanStudentId = '';
+    }
+
+    function submitGateScan(actionType) {
+      if (!pendingScanStudentId) return;
 
       try {
         const result = HostelHubDB.addGateLog(
-          student_id, 
-          action_type, 
+          pendingScanStudentId, 
+          actionType, 
           watchmanProfile.id, 
           watchmanProfile.assigned_hostel
         );
 
         if (result.status === 'SUCCESS') {
-          showToast(`Patrol logged check-${action_type.toLowerCase()} for student.`, 'success');
-          document.getElementById('studentId').value = ''; // Clear input
+          showToast(`Patrol logged ${actionType === 'IN' ? 'Check-In' : 'Check-Out'} for student.`, 'success');
+          
+          // Clear inputs
+          document.getElementById('studentId').value = '';
+          closeGateScanModal();
           loadGateLogs(); // Refresh ledger list
         } else {
           showToast(result.message || 'Log write rejected.', 'error');
@@ -201,6 +254,13 @@
         showToast('Error writing gate log to local database.', 'error');
         console.error(err);
       }
+    }
+
+    // Submit log gate event (opens the verification modal)
+    document.getElementById('gateLogForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const student_id = document.getElementById('studentId').value.trim();
+      openGateScanModal(student_id);
     });
 
     let html5QrcodeScanner = null;
@@ -221,11 +281,8 @@
         config,
         (decodedText, decodedResult) => {
           showToast("QR Code Scanned successfully!", "success");
-          
-          // Decode the QR payload (which is the student ID, e.g. M1120726001)
-          document.getElementById('studentId').value = decodedText;
-          
           stopCameraScanner();
+          openGateScanModal(decodedText);
         },
         (errorMessage) => {}
       ).then(() => {
