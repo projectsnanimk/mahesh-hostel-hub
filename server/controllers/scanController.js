@@ -4,12 +4,15 @@ const db = require('../db');
 // Helper to determine the current meal window based on system time (hour 0-23)
 function getCurrentMealWindow(date = new Date()) {
   const hour = date.getHours();
-  
-  if (hour >= 6 && hour < 10) {
+  const minute = date.getMinutes();
+  const timeInMinutes = hour * 60 + minute;
+
+  // BREAKFAST: 7:30 AM - 9:00 AM
+  if (timeInMinutes >= 450 && timeInMinutes < 540) {
     return 'MORNING';
-  } else if (hour >= 12 && hour < 15) {
+  } else if (timeInMinutes >= 690 && timeInMinutes < 840) {
     return 'AFTERNOON';
-  } else if (hour >= 18 && hour < 21) {
+  } else if (timeInMinutes >= 1200 && timeInMinutes < 1260) {
     return 'EVENING';
   }
   return null; // Outside meal windows

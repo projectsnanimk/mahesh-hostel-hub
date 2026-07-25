@@ -27,7 +27,6 @@
         <button class="btn-submit" type="submit">Verify Credentials</button>
       </form>
       
-
     </div>
   </div>
 
@@ -68,8 +67,12 @@
           showToast('Authentication Failed: Invalid Student ID or Password', 'error');
         }
       } catch (err) {
-        showToast('Local database processing error.', 'error');
-        console.error(err);
+        if (err.message === 'PENDING_APPROVAL') {
+          showToast('Authentication Failed: Account pending Admin approval.', 'warning');
+        } else {
+          showToast('Local database processing error.', 'error');
+          console.error(err);
+        }
       }
     });
   </script>

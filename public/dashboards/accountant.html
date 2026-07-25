@@ -566,6 +566,14 @@
       });
       document.getElementById(tabId).classList.add('active');
       event.currentTarget.classList.add('active');
+      
+      // Auto-reload data on tab switch to ensure real-time changes are shown
+      if (tabId === 'tab-ledger') {
+        loadStudents();
+        loadPaymentsLog();
+      } else if (tabId === 'tab-kitchen') {
+        loadKitchenMetrics();
+      }
     }
 
     function initAccountant() {
@@ -614,13 +622,18 @@
         const statusClass = `status-pill ${statusLabel.toLowerCase()}`;
         const balance = parseFloat(student.fee_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
+        let statusHtml = `<span class="${statusClass}">${statusLabel}</span>`;
+        if (student.approval_status === 'PENDING') {
+          statusHtml += `<br><span class="status-pill outside" style="background:#d97706; color:#ffffff; border-color:#d97706; font-size:0.65rem; padding:1px 6px; margin-top:4px; display:inline-block;">PENDING ADMIN</span>`;
+        }
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><strong>${student.student_id}</strong></td>
           <td>${student.full_name}</td>
           <td>Block ${student.hostel_id}</td>
           <td>${student.room_number}</td>
-          <td><span class="${statusClass}">${statusLabel}</span></td>
+          <td>${statusHtml}</td>
           <td style="font-weight:700; color: ${student.fee_balance > 0 ? '#ef4444' : 'var(--color-success)'};">₹${balance}</td>
           <td>
             <button class="btn-action edit" onclick="openRecordPaymentModal('${student.student_id}', '${student.full_name}', ${student.fee_balance})">

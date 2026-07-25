@@ -8,27 +8,432 @@
   <script src="/js/db-helper.js"></script>
   <!-- Load QRCode.js CDN for client-side QR generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    /* Inline overrides to bypass caching and fix inline span rendering */
+    .hamburger-btn {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      z-index: 1001;
+    }
+
+    .hamburger-btn:hover {
+      background: #e2e8f0;
+      transform: scale(1.05);
+    }
+
+    .hamburger-line {
+      display: block; /* Fix for rendering inline spans */
+      width: 20px;
+      height: 2px;
+      background-color: #1e293b;
+      border-radius: 2px;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+
+    .hamburger-btn.open .hamburger-line:nth-child(1) {
+      transform: translateY(7px) rotate(45deg);
+    }
+
+    .hamburger-btn.open .hamburger-line:nth-child(2) {
+      opacity: 0;
+    }
+
+    .hamburger-btn.open .hamburger-line:nth-child(3) {
+      transform: translateY(-7px) rotate(-45deg);
+    }
+
+    /* Side Navigation Drawer */
+    .drawer-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(6px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 900;
+    }
+
+    .drawer-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .nav-drawer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 320px;
+      max-width: 85vw;
+      height: 100vh;
+      background-color: #ffffff;
+      box-shadow: 0 0 35px rgba(0, 0, 0, 0.15);
+      z-index: 1000;
+      transform: translateX(-100%);
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .nav-drawer.active {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      padding: 24px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
+    }
+
+    .drawer-title-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .drawer-title {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #1e293b;
+    }
+
+    .drawer-close-btn {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: #64748b;
+      transition: all 0.3s ease;
+    }
+
+    .drawer-close-btn:hover {
+      background: #ef4444;
+      color: #ffffff;
+      border-color: #ef4444;
+    }
+
+    .drawer-menu-list {
+      list-style: none;
+      padding: 16px 12px;
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+
+    .drawer-menu-item {
+      margin-bottom: 6px;
+    }
+
+    .drawer-menu-link {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      color: #334155;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .drawer-menu-link:hover {
+      background: rgba(79, 70, 229, 0.08);
+      color: #4f46e5;
+      transform: translateX(4px);
+    }
+
+    .drawer-menu-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .drawer-menu-link:hover .drawer-menu-icon {
+      background: #4f46e5;
+      color: #ffffff;
+    }
+
+    .drawer-footer {
+      padding: 20px;
+      border-top: 1px solid #f1f5f9;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+
+    /* Portal Modals for menu items */
+    .portal-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      padding: 20px;
+    }
+
+    .portal-modal-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .portal-modal-card {
+      background: #ffffff;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 620px;
+      max-height: 90vh;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .portal-modal-header {
+      padding: 22px 28px;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .portal-modal-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .portal-modal-close {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: #ffffff;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    .portal-modal-close:hover {
+      background: rgba(255, 255, 255, 0.35);
+      transform: rotate(90deg);
+    }
+
+    .portal-modal-body {
+      padding: 28px;
+      overflow-y: auto;
+      font-size: 0.95rem;
+      color: #334155;
+      line-height: 1.6;
+    }
+
+    .info-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .info-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .info-card-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: #4f46e5;
+      margin-bottom: 6px;
+    }
+
+    .fee-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      font-size: 0.9rem;
+    }
+
+    .fee-table th {
+      background: #f1f5f9;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      color: #475569;
+    }
+
+    .fee-table td {
+      padding: 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .gallery-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      overflow: hidden;
+      text-align: center;
+      padding: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .gallery-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      border-color: #cbd5e1;
+    }
+
+    .gallery-icon-preview {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .gallery-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #1e293b;
+    }
+
+    .gallery-desc {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .star-rating-container {
+      display: flex;
+      gap: 10px;
+      font-size: 1.8rem;
+      color: #cbd5e1;
+      cursor: pointer;
+      margin: 10px 0 20px 0;
+    }
+
+    .star-rating-container .star.active {
+      color: #f59e0b;
+    }
+  </style>
 </head>
 <body>
-  <header class="app-header">
-    <div class="brand">🎓 Welcome to Mahesh Hostels</div>
-    <div class="nav-user">
-      <div class="user-badge">
-        <div class="user-avatar" id="navAvatar">U</div>
-        <div class="user-info">
-          <span class="user-name" id="navName">Student Name</span>
-          <span class="user-role-label">Registered Student</span>
-        </div>
-      </div>
-      <button class="btn-logout" onclick="logout()">Logout</button>
-    </div>
-  </header>
+  <!-- Side Navigation Drawer Backdrop -->
+  <div class="drawer-overlay" id="drawerOverlay"></div>
 
-  <main class="main-content">
-    <div class="dashboard-grid">
-      <!-- Read-Only Profile Card (Grid) -->
-      <div class="card" style="grid-column: span 8;">
-        <h2 class="card-title">My Registration Profile</h2>
+  <!-- Side Navigation Drawer -->
+  <nav class="nav-drawer" id="navDrawer" aria-label="Student Portal Navigation">
+    <div class="drawer-header">
+      <div class="drawer-title-box">
+        <span style="font-size: 1.3rem;">📌</span>
+        <span class="drawer-title">Navigation Menu</span>
+      </div>
+      <button class="drawer-close-btn" id="drawerCloseBtn" aria-label="Close menu">&times;</button>
+    </div>
+    
+    <ul class="drawer-menu-list">
+      <li class="drawer-menu-item">
+        <a class="drawer-menu-link" id="navHomeBtn">
+          <span class="drawer-menu-icon">🏠</span>
+          <span>1. Home</span>
+        </a>
+      </li>
+      <li class="drawer-menu-item">
+        <a class="drawer-menu-link" id="navStudentDetailsBtn">
+          <span class="drawer-menu-icon">👤</span>
+          <span>2. Student Details</span>
+        </a>
+      </li>
+      <li class="drawer-menu-item">
+        <a class="drawer-menu-link" id="navFeeDetailsBtn">
+          <span class="drawer-menu-icon">💳</span>
+          <span>3. Fee Detail & Payment History</span>
+        </a>
+      </li>
+      <li class="drawer-menu-item">
+        <a class="drawer-menu-link" id="navAboutBtn">
+          <span class="drawer-menu-icon">ℹ️</span>
+          <span>4. About</span>
+        </a>
+      </li>
+      <li class="drawer-menu-item">
+        <a class="drawer-menu-link" id="navFeedbackBtn">
+          <span class="drawer-menu-icon">💬</span>
+          <span>5. Feed Back</span>
+        </a>
+      </li>
+      <li class="drawer-menu-item">
+        <a class="drawer-menu-link" id="navGalleryBtn">
+          <span class="drawer-menu-icon">🖼️</span>
+          <span>6. Gallery</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="drawer-footer">
+      HostelHub Student Portal &copy; 2026<br>Mahesh Hostels Management
+    </div>
+  </nav>
+
+  <!-- MODAL 2: Student Details -->
+  <div class="portal-modal-overlay" id="studentDetailsModal">
+    <div class="portal-modal-card" style="max-width: 750px;">
+      <div class="portal-modal-header">
+        <div class="portal-modal-title"><span>👤</span> My Registration Profile Details</div>
+        <button class="portal-modal-close" onclick="closePortalModal('studentDetailsModal')">&times;</button>
+      </div>
+      <div class="portal-modal-body">
+        <p style="margin-bottom: 20px; font-size: 0.9rem; color: #64748b;">These are your official registration details verified during hostel admission. For corrections, please contact the Central Administration office.</p>
         <div class="profile-grid" id="profileGrid">
           <div class="profile-item">
             <span class="profile-label">Student ID</span>
@@ -37,6 +442,26 @@
           <div class="profile-item">
             <span class="profile-label">Full Name</span>
             <span class="profile-value" id="profileName">-</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Date of Birth</span>
+            <span class="profile-value" id="profileDob">-</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Blood Group</span>
+            <span class="profile-value" id="profileBloodGroup">-</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Aadhar Number</span>
+            <span class="profile-value" id="profileAadhar">-</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Student Contact</span>
+            <span class="profile-value" id="profileContact">-</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Email Address</span>
+            <span class="profile-value" id="profileEmail">-</span>
           </div>
           <div class="profile-item">
             <span class="profile-label">Hostel Block</span>
@@ -51,18 +476,274 @@
             <span class="profile-value" id="profileStatus">-</span>
           </div>
           <div class="profile-item">
-            <span class="profile-label">Date of Birth</span>
-            <span class="profile-value" id="profileDob">-</span>
+            <span class="profile-label">Stream / Branch</span>
+            <span class="profile-value" id="profileStream">-</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Year of Study</span>
+            <span class="profile-value" id="profileYear">-</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Parent's Name</span>
+            <span class="profile-value" id="profileParentName">-</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Parent's Contact</span>
+            <span class="profile-value" id="profileParentContact">-</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Total Course Fee</span>
+            <span class="profile-value" id="profileTotalFee">-</span>
+          </div>
+          <div class="profile-item">
+            <span class="profile-label">Pincode</span>
+            <span class="profile-value" id="profilePincode">-</span>
+          </div>
+          <div class="profile-item" style="grid-column: span 2;">
+            <span class="profile-label">Permanent Address</span>
+            <span class="profile-value" id="profileAddress">-</span>
           </div>
         </div>
       </div>
+    </div>
+  </div>
 
+  <!-- MODAL 3: Fee Detail and Payment History -->
+  <div class="portal-modal-overlay" id="feeDetailsModal">
+    <div class="portal-modal-card" style="max-width: 750px;">
+      <div class="portal-modal-header">
+        <div class="portal-modal-title"><span>💳</span> Fee Details & Payment History</div>
+        <button class="portal-modal-close" onclick="closePortalModal('feeDetailsModal')">&times;</button>
+      </div>
+      <div class="portal-modal-body">
+        
+        <!-- Dues & Payments Summary Cards -->
+        <h4 style="margin-bottom: 12px; color: #1e293b; border-left: 3px solid #4f46e5; padding-left: 8px;">📊 Financial Summary</h4>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px;">
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; text-align: center;">
+            <div style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Total Course Fee</div>
+            <div id="modalTotalFee" style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-top: 4px;">₹0.00</div>
+          </div>
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 15px; text-align: center;">
+            <div style="font-size: 0.75rem; color: #166534; font-weight: 700; text-transform: uppercase;">Total Paid</div>
+            <div id="modalPaidAmount" style="font-size: 1.25rem; font-weight: 800; color: #15803d; margin-top: 4px;">₹0.00</div>
+          </div>
+          <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 15px; text-align: center;">
+            <div style="font-size: 0.75rem; color: #991b1b; font-weight: 700; text-transform: uppercase;">Remaining Dues</div>
+            <div id="modalRemainingDues" style="font-size: 1.25rem; font-weight: 800; color: #b91c1c; margin-top: 4px;">₹0.00</div>
+          </div>
+        </div>
+
+        <!-- Scrollable Payment Logs Table -->
+        <h4 style="margin-bottom: 12px; color: #1e293b; border-left: 3px solid #4f46e5; padding-left: 8px;">💳 My Payment Transactions Ledger</h4>
+        <div class="asset-table-wrapper" style="max-height: 220px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 25px;">
+          <table class="fee-table" style="margin: 0; border: none; width: 100%;">
+            <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 1;">
+              <tr>
+                <th>Date & Time</th>
+                <th>Transaction ID</th>
+                <th>Amount Paid</th>
+                <th>Mode</th>
+                <th>Reference Notes</th>
+              </tr>
+            </thead>
+            <tbody id="modalPaymentsTableBody">
+              <tr>
+                <td colspan="5" style="text-align: center; color: #64748b; padding: 30px 0;">No payments recorded.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Collapsible / Reference Section for Standard Fee Tariff -->
+        <details style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 15px; background: #fafafa; margin-bottom: 15px;">
+          <summary style="font-weight: 700; font-size: 0.85rem; color: #475569; cursor: pointer; user-select: none;">📄 Standard Hostel Fee Tariffs (Reference)</summary>
+          <div style="margin-top: 10px;">
+            <table class="fee-table" style="margin: 0;">
+              <thead>
+                <tr>
+                  <th>Fee Category</th>
+                  <th>Frequency</th>
+                  <th>Standard Amount (₹)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Hostel Room Rent (Standard AC / Non-AC)</td>
+                  <td>Monthly</td>
+                  <td>₹ 6,500 - ₹ 8,500</td>
+                </tr>
+                <tr>
+                  <td>Mess & Dining Charges</td>
+                  <td>Monthly</td>
+                  <td>₹ 3,500</td>
+                </tr>
+                <tr>
+                  <td>Maintenance & Electricity Deposit</td>
+                  <td>Semester</td>
+                  <td>₹ 2,000</td>
+                </tr>
+                <tr>
+                  <td>Caution Deposit (Refundable)</td>
+                  <td>One-time</td>
+                  <td>₹ 5,000</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </details>
+
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:16px;">
+          <h4 style="color:#166534; font-size:0.9rem; margin-bottom:4px;">💡 Accepted Payment Methods</h4>
+          <p style="font-size:0.85rem; color:#15803d; margin: 0;">Online UPI, Netbanking, Debit/Credit Card via the Student Dashboard, or Direct Bank Transfer to Mahesh Hostels Account.</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: About -->
+  <div class="portal-modal-overlay" id="aboutModal">
+    <div class="portal-modal-card">
+      <div class="portal-modal-header">
+        <div class="portal-modal-title"><span>ℹ️</span> About Mahesh Hostels</div>
+        <button class="portal-modal-close" onclick="closePortalModal('aboutModal')">&times;</button>
+      </div>
+      <div class="portal-modal-body">
+        <p><strong>Mahesh Hostels</strong> provides premium, comfortable, and highly secure student accommodation designed for academic excellence and peace of mind.</p>
+        
+        <div class="info-card-grid">
+          <div class="info-card">
+            <div class="info-card-title">🛏️ Modern Living Spaces</div>
+            <p style="font-size:0.85rem; color:#64748b;">Spacious, fully furnished rooms with high-speed Wi-Fi and ergonomic study desks.</p>
+          </div>
+          <div class="info-card">
+            <div class="info-card-title">🍲 Hygienic Food</div>
+            <p style="font-size:0.85rem; color:#64748b;">Nutritious 4-meal daily menu served in a clean, air-conditioned dining hall.</p>
+          </div>
+          <div class="info-card">
+            <div class="info-card-title">🔒 24/7 Security</div>
+            <p style="font-size:0.85rem; color:#64748b;">Biometric access, 24-hour CCTV surveillance, and dedicated warden supervision.</p>
+          </div>
+          <div class="info-card">
+            <div class="info-card-title">⚡ Power & RO Water</div>
+            <p style="font-size:0.85rem; color:#64748b;">24/7 power backup and purified drinking water stations on every floor.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 5: Feed Back -->
+  <div class="portal-modal-overlay" id="feedbackModal">
+    <div class="portal-modal-card">
+      <div class="portal-modal-header">
+        <div class="portal-modal-title"><span>💬</span> Student Feedback & Support</div>
+        <button class="portal-modal-close" onclick="closePortalModal('feedbackModal')">&times;</button>
+      </div>
+      <div class="portal-modal-body">
+        <p>Your feedback helps us continuously improve hostel facilities and services. Please submit your thoughts below:</p>
+        
+        <form id="portalFeedbackForm" style="margin-top:16px;">
+          <div class="form-group">
+            <label class="form-label">Rate Your Experience</label>
+            <div class="star-rating-container" id="starRating">
+              <span class="star" data-rating="1">★</span>
+              <span class="star" data-rating="2">★</span>
+              <span class="star" data-rating="3">★</span>
+              <span class="star" data-rating="4">★</span>
+              <span class="star" data-rating="5">★</span>
+            </div>
+            <input type="hidden" id="selectedRating" value="5">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="feedbackCategory">Feedback Category</label>
+            <select class="form-input" id="feedbackCategory" required>
+              <option value="Food & Mess Quality">Food & Mess Quality</option>
+              <option value="Room Maintenance">Room Maintenance</option>
+              <option value="Internet & Wi-Fi">Internet & Wi-Fi</option>
+              <option value="Security & Gate Pass">Security & Gate Pass</option>
+              <option value="General Suggestion">General Suggestion</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="feedbackComments">Your Message / Suggestion</label>
+            <textarea class="form-input" id="feedbackComments" rows="3" placeholder="Tell us how we can improve..." required></textarea>
+          </div>
+
+          <button class="btn-submit" type="submit">Submit Feedback</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 6: Gallery -->
+  <div class="portal-modal-overlay" id="galleryModal">
+    <div class="portal-modal-card" style="max-width: 720px;">
+      <div class="portal-modal-header">
+        <div class="portal-modal-title"><span>🖼️</span> Hostel Gallery</div>
+        <button class="portal-modal-close" onclick="closePortalModal('galleryModal')">&times;</button>
+      </div>
+      <div class="portal-modal-body">
+        <p>Explore facilities and life at Mahesh Hostels:</p>
+        
+        <div class="gallery-grid">
+          <div class="gallery-card">
+            <div class="gallery-icon-preview">🛏️</div>
+            <div class="gallery-title">Deluxe Student Rooms</div>
+            <div class="gallery-desc">Comfortable beds, study tables, and personal wardrobes.</div>
+          </div>
+          <div class="gallery-card">
+            <div class="gallery-icon-preview">🍽️</div>
+            <div class="gallery-title">Central Dining Hall</div>
+            <div class="gallery-desc">Hygienic multi-cuisine meals prepared fresh daily.</div>
+          </div>
+          <div class="gallery-card">
+            <div class="gallery-icon-preview">📚</div>
+            <div class="gallery-title">Quiet Study Lounge</div>
+            <div class="gallery-desc">24/7 quiet zone equipped with high-speed Wi-Fi.</div>
+          </div>
+          <div class="gallery-card">
+            <div class="gallery-icon-preview">🏋️</div>
+            <div class="gallery-title">Fitness & Recreation</div>
+            <div class="gallery-desc">Indoor games and gym equipment for student wellness.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <header class="app-header">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle navigation menu">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
+      <div class="brand" style="margin-left: 0;">🎓 Welcome to Mahesh Hostels</div>
+    </div>
+    <div class="nav-user">
+      <div class="user-badge">
+        <div class="user-avatar" id="navAvatar">U</div>
+        <div class="user-info">
+          <span class="user-name" id="navName">Student Name</span>
+          <span class="user-role-label">Registered Student</span>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="dashboard-grid">
       <!-- Financial Fee Balance Card -->
-      <div class="card balance-card" style="grid-column: span 4;">
-        <span class="profile-label" style="color: rgba(255,255,255,0.7);">Pending Dues</span>
+      <div class="card balance-card" style="grid-column: span 12;">
+        <span class="profile-label" style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Pending Dues</span>
         <h2>Account Balance</h2>
         <div class="balance-amount" id="profileBalance">₹0.00</div>
-        <p style="margin-top: 15px; font-size: 0.8rem; opacity: 0.8;">Payments processed through the Central Accountant.</p>
+        <p style="margin-top: 15px; font-size: 0.9rem; opacity: 0.9;">Payments processed and verified securely through the Central Accountant.</p>
       </div>
 
       <!-- Mess Token Generator (QR) -->
@@ -159,16 +840,28 @@
     // Dynamic Helper for meal window calculation based on local time
     function getMealWindow(date = new Date()) {
       const hour = date.getHours();
-      if (hour >= 6 && hour < 10) return 'MORNING';
-      if (hour >= 12 && hour < 15) return 'AFTERNOON';
-      if (hour >= 18 && hour < 21) return 'EVENING';
+      const minute = date.getMinutes();
+      const timeInMinutes = hour * 60 + minute;
+
+      // BREAKFAST: 7:30 AM - 9:00 AM
+      if (timeInMinutes >= 450 && timeInMinutes < 540) {
+        return 'MORNING';
+      }
+      // LUNCH: 11:30 AM - 2:00 PM
+      if (timeInMinutes >= 690 && timeInMinutes < 840) {
+        return 'AFTERNOON';
+      }
+      // DINNER: 8:00 PM - 9:00 PM
+      if (timeInMinutes >= 1200 && timeInMinutes < 1260) {
+        return 'EVENING';
+      }
       return null;
     }
 
     function getMealWindowLabel(window) {
-      if (window === 'MORNING') return 'Breakfast (06:00 - 10:00)';
-      if (window === 'AFTERNOON') return 'Lunch (12:00 - 15:00)';
-      if (window === 'EVENING') return 'Dinner (18:00 - 21:00)';
+      if (window === 'MORNING') return 'Breakfast (07:30 AM - 09:00 AM)';
+      if (window === 'AFTERNOON') return 'Lunch (11:30 AM - 02:00 PM)';
+      if (window === 'EVENING') return 'Dinner (08:00 PM - 09:00 PM)';
       return 'Mess Closed (No active window)';
     }
 
@@ -200,6 +893,11 @@
           // Populate Grid
           document.getElementById('profileId').innerText = studentData.student_id;
           document.getElementById('profileName').innerText = studentData.full_name;
+          document.getElementById('profileDob').innerText = studentData.dob ? new Date(studentData.dob).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+          document.getElementById('profileBloodGroup').innerText = studentData.blood_group || 'N/A';
+          document.getElementById('profileAadhar').innerText = studentData.aadhar_no || '-';
+          document.getElementById('profileContact').innerText = studentData.student_contact || '-';
+          document.getElementById('profileEmail').innerText = studentData.email_id || 'N/A';
           document.getElementById('profileHostel').innerText = studentData.hostel_id + ' Block';
           document.getElementById('profileRoom').innerText = studentData.room_number;
           
@@ -212,7 +910,14 @@
           statusContainer.innerHTML = '';
           statusContainer.appendChild(statusPill);
 
-          document.getElementById('profileDob').innerText = new Date(studentData.dob).toLocaleDateString();
+          document.getElementById('profileStream').innerText = studentData.stream || '-';
+          document.getElementById('profileYear').innerText = studentData.year ? studentData.year + (studentData.year === '1' ? 'st' : studentData.year === '2' ? 'nd' : studentData.year === '3' ? 'rd' : 'th') + ' Year' : '-';
+          document.getElementById('profileParentName').innerText = studentData.parent_name || '-';
+          document.getElementById('profileParentContact').innerText = studentData.parent_contact || '-';
+          document.getElementById('profileTotalFee').innerText = studentData.total_fee ? '₹' + parseFloat(studentData.total_fee).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '₹0.00';
+          document.getElementById('profilePincode').innerText = studentData.pincode || '-';
+          document.getElementById('profileAddress').innerText = studentData.full_address || '-';
+
           document.getElementById('profileBalance').innerText = '₹' + parseFloat(studentData.fee_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
           // Generate QR code once
@@ -227,6 +932,49 @@
         }
       } catch (err) {
         showToast('Local database processing error.', 'error');
+        console.error(err);
+      }
+    }
+
+    function loadFeeAndPaymentDetails() {
+      if (!studentData) return;
+      
+      const totalFee = studentData.total_fee || 0;
+      const dues = studentData.fee_balance || 0;
+      const paid = Math.max(0, totalFee - dues);
+      
+      document.getElementById('modalTotalFee').innerText = '₹' + parseFloat(totalFee).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+      document.getElementById('modalPaidAmount').innerText = '₹' + parseFloat(paid).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+      document.getElementById('modalRemainingDues').innerText = '₹' + parseFloat(dues).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+      
+      // Load payment list
+      try {
+        const paymentsRaw = localStorage.getItem('hostelhub_payments');
+        const payments = paymentsRaw ? JSON.parse(paymentsRaw) : [];
+        const studentPayments = payments.filter(p => p.student_id === studentData.student_id)
+                                         .sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        const tbody = document.getElementById('modalPaymentsTableBody');
+        tbody.innerHTML = '';
+        
+        if (studentPayments.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 30px 0;">No payments recorded yet.</td></tr>';
+          return;
+        }
+        
+        studentPayments.forEach(p => {
+          const dateStr = new Date(p.timestamp).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${dateStr}</td>
+            <td><code style="color: #4f46e5; font-weight: 700;">${p.txn_id}</code></td>
+            <td style="color: #16a34a; font-weight: 700;">₹${parseFloat(p.amount_paid).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+            <td><span style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">${p.payment_mode}</span></td>
+            <td style="color: #475569; font-size: 0.8rem;">${p.notes || '-'}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
         console.error(err);
       }
     }
@@ -417,11 +1165,142 @@
         li.innerHTML = `<span>${bullet}</span><span>${cleanText}</span>`;
         ul.appendChild(li);
       });
-    }
-
-    function logout() {
+    }    function logout() {
       localStorage.clear();
       window.location.href = '/';
+    }
+
+    // Hamburger & Drawer Logic
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const navDrawer = document.getElementById('navDrawer');
+    const drawerOverlay = document.getElementById('drawerOverlay');
+    const drawerCloseBtn = document.getElementById('drawerCloseBtn');
+
+    function toggleDrawer() {
+      const isOpen = navDrawer.classList.contains('active');
+      if (isOpen) {
+        closeDrawer();
+      } else {
+        openDrawer();
+      }
+    }
+
+    function openDrawer() {
+      hamburgerBtn.classList.add('open');
+      navDrawer.classList.add('active');
+      drawerOverlay.classList.add('active');
+    }
+
+    function closeDrawer() {
+      hamburgerBtn.classList.remove('open');
+      navDrawer.classList.remove('active');
+      drawerOverlay.classList.remove('active');
+    }
+
+    hamburgerBtn.addEventListener('click', toggleDrawer);
+    drawerCloseBtn.addEventListener('click', closeDrawer);
+    drawerOverlay.addEventListener('click', closeDrawer);
+
+    // Modal Helpers
+    function openPortalModal(modalId) {
+      closeDrawer();
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        if (modalId === 'feeDetailsModal') {
+          loadFeeAndPaymentDetails();
+        }
+        modal.classList.add('show');
+      }
+    }
+
+    function closePortalModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.classList.remove('show');
+      }
+    }
+
+    // Close modals on overlay click or Escape key
+    document.querySelectorAll('.portal-modal-overlay').forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.classList.remove('show');
+        }
+      });
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeDrawer();
+        document.querySelectorAll('.portal-modal-overlay').forEach(m => m.classList.remove('show'));
+      }
+    });
+
+    // Navigation Menu Items Event Handlers
+    document.getElementById('navHomeBtn').addEventListener('click', () => {
+      closeDrawer();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    document.getElementById('navStudentDetailsBtn').addEventListener('click', () => {
+      openPortalModal('studentDetailsModal');
+    });
+
+    document.getElementById('navFeeDetailsBtn').addEventListener('click', () => {
+      openPortalModal('feeDetailsModal');
+    });
+
+    document.getElementById('navAboutBtn').addEventListener('click', () => {
+      openPortalModal('aboutModal');
+    });
+
+    document.getElementById('navFeedbackBtn').addEventListener('click', () => {
+      openPortalModal('feedbackModal');
+    });
+
+    document.getElementById('navGalleryBtn').addEventListener('click', () => {
+      openPortalModal('galleryModal');
+    });
+
+    // Star Rating Logic
+    const stars = document.querySelectorAll('#starRating .star');
+    const selectedRatingInput = document.getElementById('selectedRating');
+    
+    function setRating(rating) {
+      selectedRatingInput.value = rating;
+      stars.forEach(star => {
+        const r = parseInt(star.getAttribute('data-rating'));
+        if (r <= rating) {
+          star.classList.add('active');
+        } else {
+          star.classList.remove('active');
+        }
+      });
+    }
+
+    if (stars.length > 0) {
+      setRating(5); // Default 5 stars
+      stars.forEach(star => {
+        star.addEventListener('click', () => {
+          const rating = parseInt(star.getAttribute('data-rating'));
+          setRating(rating);
+        });
+      });
+    }
+
+    // Feedback Form Submission
+    const feedbackForm = document.getElementById('portalFeedbackForm');
+    if (feedbackForm) {
+      feedbackForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const rating = selectedRatingInput.value;
+        const category = document.getElementById('feedbackCategory').value;
+        const comments = document.getElementById('feedbackComments').value;
+
+        showToast(`Thank you! Your feedback for "${category}" (${rating}★) has been received.`, 'success');
+        document.getElementById('feedbackComments').value = '';
+        closePortalModal('feedbackModal');
+      });
     }
 
     // Bootstrap profile loader

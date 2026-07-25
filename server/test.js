@@ -31,9 +31,9 @@ async function runTests() {
     log.info('Running Test 1: smart Credential Algorithms...');
 
     // Formula A: Student User ID Format
-    // Block: M1, Date: 2026-07-12. If count is 0, the next serial is 001. ID => M1120726001
-    const testId = await authCtrl.calculateStudentId('M1', '2026-07-12');
-    assert.strictEqual(testId, 'M1120726001', 'Formula A: Student ID generation failed');
+    // Block: M1, Date: 2026-07-13. If count is 0, the next serial is 001. ID => M1130726001
+    const testId = await authCtrl.calculateStudentId('M1', '2026-07-13');
+    assert.strictEqual(testId, 'M1130726001', 'Formula A: Student ID generation failed');
 
     // Formula B: Student Default Password: First 3 letters of name uppercase spaces removed + @ + DOB DDMMYYYY
     // Name: 'MOHAN KRISHNA', DOB: 27-05-2004 => MOH@27052004

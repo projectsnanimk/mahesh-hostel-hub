@@ -32,9 +32,75 @@ const DEFAULT_STAFF = [
 ];
 
 const DEFAULT_STUDENTS = [
-  { student_id: 'M1120726001', full_name: 'MOHAN KRISHNA', password: 'MOH@27052004', hostel_id: 'M1', room_number: '101A', fee_balance: 4500.00, current_status: 'INSIDE', dob: '2004-05-27', registration_date: '2026-07-12' },
-  { student_id: 'M2120726001', full_name: 'RAHUL SHARMA', password: 'RAH@15092005', hostel_id: 'M2', room_number: '204B', fee_balance: 0.00, current_status: 'INSIDE', dob: '2005-09-15', registration_date: '2026-07-12' },
-  { student_id: 'M3120726001', full_name: 'AN SHARMA', password: 'ANX@01122004', hostel_id: 'M3', room_number: '302C', fee_balance: 12000.00, current_status: 'OUTSIDE', dob: '2004-12-01', registration_date: '2026-07-12' }
+  { 
+    student_id: 'M1120726001', 
+    full_name: 'MOHAN KRISHNA', 
+    password: 'MOH@27052004', 
+    hostel_id: 'M1', 
+    room_number: '101A', 
+    fee_balance: 4500.00, 
+    current_status: 'INSIDE', 
+    dob: '2004-05-27', 
+    registration_date: '2026-07-12',
+    year: '3',
+    parent_name: 'Koteswara Rao',
+    blood_group: 'O+',
+    aadhar_no: '123456789012',
+    student_contact: '9876543210',
+    parent_contact: '9876543211',
+    email_id: 'mohan.krishna@gmail.com',
+    stream: 'B.Tech CSE',
+    total_fee: 150000.00,
+    full_address: 'Flat 304, Srinivasa Towers, Ameerpet, Hyderabad, Telangana',
+    pincode: '500038',
+    approval_status: 'APPROVED'
+  },
+  { 
+    student_id: 'M2120726001', 
+    full_name: 'RAHUL SHARMA', 
+    password: 'RAH@15092005', 
+    hostel_id: 'M2', 
+    room_number: '204B', 
+    fee_balance: 0.00, 
+    current_status: 'INSIDE', 
+    dob: '2005-09-15', 
+    registration_date: '2026-07-12',
+    year: '2',
+    parent_name: 'Ram Charan Sharma',
+    blood_group: 'A+',
+    aadhar_no: '987654321098',
+    student_contact: '9876543220',
+    parent_contact: '9876543221',
+    email_id: 'rahul.sharma@gmail.com',
+    stream: 'B.Tech ECE',
+    total_fee: 140000.00,
+    full_address: 'Plot 45, Sector 5, Dwarka, New Delhi',
+    pincode: '110075',
+    approval_status: 'APPROVED'
+  },
+  { 
+    student_id: 'M3120726001', 
+    full_name: 'AN SHARMA', 
+    password: 'ANX@01122004', 
+    hostel_id: 'M3', 
+    room_number: '302C', 
+    fee_balance: 12000.00, 
+    current_status: 'OUTSIDE', 
+    dob: '2004-12-01', 
+    registration_date: '2026-07-12',
+    year: '4',
+    parent_name: 'Devendra Sharma',
+    blood_group: 'B+',
+    aadhar_no: '456789012345',
+    student_contact: '9876543230',
+    parent_contact: '9876543231',
+    email_id: 'an.sharma@gmail.com',
+    stream: 'B.Tech IT',
+    total_fee: 160000.00,
+    full_address: 'Flat 12B, Green Meadows, Gachibowli, Hyderabad, Telangana',
+    pincode: '500032',
+    approval_status: 'APPROVED'
+  }
 ];
 
 // Initialize localStorage DB if empty or missing keys
@@ -53,7 +119,7 @@ function initStorageDb() {
   if (!db.hostels) { db.hostels = DEFAULT_HOSTELS; changed = true; }
   if (!db.central_kitchen_assets) { db.central_kitchen_assets = DEFAULT_ASSETS; changed = true; }
   if (!db.staff_users) { db.staff_users = DEFAULT_STAFF; changed = true; }
-  if (!db.students) { db.students = DEFAULT_STUDENTS; changed = true; }
+  if (!db.students || (db.students.length > 0 && !db.students[0].parent_name)) { db.students = DEFAULT_STUDENTS; changed = true; }
   if (!db.mess_attendance_logs) { db.mess_attendance_logs = []; changed = true; }
   if (!db.gate_logs) { db.gate_logs = []; changed = true; }
   
@@ -76,9 +142,21 @@ function saveDb(db) {
 // Helper to determine the current meal window based on local time
 function getSystemMealWindow(date = new Date()) {
   const hour = date.getHours();
-  if (hour >= 6 && hour < 10) return 'MORNING';
-  if (hour >= 12 && hour < 15) return 'AFTERNOON';
-  if (hour >= 18 && hour < 21) return 'EVENING';
+  const minute = date.getMinutes();
+  const timeInMinutes = hour * 60 + minute;
+
+  // BREAKFAST: 7:30 AM - 9:00 AM
+  if (timeInMinutes >= 450 && timeInMinutes < 540) {
+    return 'MORNING';
+  }
+  // LUNCH: 11:30 AM - 2:00 PM
+  if (timeInMinutes >= 690 && timeInMinutes < 840) {
+    return 'AFTERNOON';
+  }
+  // DINNER: 8:00 PM - 9:00 PM
+  if (timeInMinutes >= 1200 && timeInMinutes < 1260) {
+    return 'EVENING';
+  }
   return null;
 }
 
@@ -99,12 +177,28 @@ function generateStudentId(blockId, regDateStr) {
   const month = String(regDate.getMonth() + 1).padStart(2, '0');
   const year = String(regDate.getFullYear()).substring(2);
 
-  // Count existing students registered on the same date in this block
-  const dateOnlyStr = regDate.toISOString().split('T')[0];
-  const count = dbState.students.filter(s => 
-    s.hostel_id === blockId && 
-    new Date(s.registration_date).toISOString().split('T')[0] === dateOnlyStr
-  ).length;
+  let dateOnlyStr = '';
+  try {
+    dateOnlyStr = regDate.toISOString().split('T')[0];
+  } catch (e) {
+    dateOnlyStr = new Date().toISOString().split('T')[0];
+  }
+
+  let count = 0;
+  if (dbState && dbState.students) {
+    dbState.students.forEach(s => {
+      if (s.hostel_id === blockId && s.registration_date) {
+        try {
+          const sDate = new Date(s.registration_date);
+          if (!isNaN(sDate.getTime()) && sDate.toISOString().split('T')[0] === dateOnlyStr) {
+            count++;
+          }
+        } catch (e) {
+          // ignore parsing error for invalid date in database records
+        }
+      }
+    });
+  }
 
   const nextSerialNum = String(count + 1).padStart(3, '0');
   return `${blockId}${day}${month}${year}${nextSerialNum}`;
@@ -113,10 +207,19 @@ function generateStudentId(blockId, regDateStr) {
 // Formula B: Generate Student Default Password
 function generateStudentDefaultPassword(fullName, dobStr) {
   const namePart = cleanNameForPassword(fullName);
-  const dob = new Date(dobStr);
-  const day = String(dob.getDate()).padStart(2, '0');
-  const month = String(dob.getMonth() + 1).padStart(2, '0');
-  const year = String(dob.getFullYear());
+  let day = '01';
+  let month = '01';
+  let year = '2000';
+  if (dobStr) {
+    try {
+      const dob = new Date(dobStr);
+      if (!isNaN(dob.getTime())) {
+        day = String(dob.getDate()).padStart(2, '0');
+        month = String(dob.getMonth() + 1).padStart(2, '0');
+        year = String(dob.getFullYear());
+      }
+    } catch(e) {}
+  }
   return `${namePart}@${day}${month}${year}`;
 }
 
@@ -129,6 +232,9 @@ const db = {
     const dbState = getDb();
     const student = dbState.students.find(s => s.student_id.toUpperCase() === studentId.toUpperCase());
     if (student && student.password === password) {
+      if (student.approval_status === 'PENDING') {
+        throw new Error('PENDING_APPROVAL');
+      }
       return student;
     }
     return null;
@@ -181,6 +287,7 @@ const db = {
       current_status: 'INSIDE',
       dob,
       registration_date: todayStr,
+      approval_status: 'PENDING', // Default to pending admin approval
       ...extraData
     };
 
@@ -196,6 +303,17 @@ const db = {
       if (roomNumber !== undefined) student.room_number = roomNumber;
       if (feeBalance !== undefined) student.fee_balance = parseFloat(feeBalance);
       if (currentStatus !== undefined) student.current_status = currentStatus;
+      saveDb(dbState);
+      return student;
+    }
+    return null;
+  },
+
+  approveStudent: (studentId) => {
+    const dbState = getDb();
+    const student = dbState.students.find(s => s.student_id === studentId);
+    if (student) {
+      student.approval_status = 'APPROVED';
       saveDb(dbState);
       return student;
     }

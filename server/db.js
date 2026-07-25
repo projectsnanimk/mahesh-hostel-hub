@@ -457,9 +457,9 @@ const db = {
       }
       const log = {
         log_id: dbMemory.mess_attendance_logs.length + 1,
-        student_id,
-        hostel_id,
-        meal_window,
+        student_id: studentId,
+        hostel_id: hostelId,
+        meal_window: mealWindow,
         scanned_at: timestamp
       };
       dbMemory.mess_attendance_logs.push(log);
