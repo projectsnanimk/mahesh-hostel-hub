@@ -450,6 +450,10 @@
             <span class="profile-value" id="profileName">-</span>
           </div>
           <div class="profile-item">
+            <span class="profile-label">Register Number</span>
+            <span class="profile-value" id="profileRegisterNo">-</span>
+          </div>
+          <div class="profile-item">
             <span class="profile-label">Date of Birth</span>
             <span class="profile-value" id="profileDob">-</span>
           </div>
@@ -772,9 +776,13 @@
               <span style="color:#94a3b8; font-size:0.75rem; display:block;">ROOM NO</span>
               <strong id="passRoomNo" style="color: white;">-</strong>
             </div>
-            <div style="grid-column: span 2;">
+            <div>
+              <span style="color:#94a3b8; font-size:0.75rem; display:block;">REGISTER NO</span>
+              <strong id="passRegisterNo" style="color: white;">-</strong>
+            </div>
+            <div>
               <span style="color:#94a3b8; font-size:0.75rem; display:block;">SECURITY PASS TOKEN</span>
-              <strong id="passTokenCode" style="color: #2dd4bf; font-family: monospace;">-</strong>
+              <strong id="passTokenCode" style="color: #2dd4bf; font-family: monospace; font-size: 0.8rem; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">-</strong>
             </div>
           </div>
 
@@ -977,6 +985,7 @@
           // Populate Grid
           document.getElementById('profileId').innerText = studentData.student_id;
           document.getElementById('profileName').innerText = studentData.full_name;
+          document.getElementById('profileRegisterNo').innerText = studentData.register_no || 'N/A';
           document.getElementById('profileDob').innerText = studentData.dob ? new Date(studentData.dob).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
           document.getElementById('profileBloodGroup').innerText = studentData.blood_group || 'N/A';
           document.getElementById('profileAadhar').innerText = studentData.aadhar_no || '-';
@@ -1410,6 +1419,7 @@
         document.getElementById('passStudentId').innerText = `ID: ${studentData.student_id}`;
         document.getElementById('passHostelBlock').innerText = `Block ${studentData.hostel_id}`;
         document.getElementById('passRoomNo').innerText = studentData.room_number;
+        document.getElementById('passRegisterNo').innerText = studentData.register_no || 'N/A';
         
         // Generate unique token code
         const uniqueToken = 'GP-' + studentData.hostel_id + '-' + studentData.student_id.slice(-6) + '-' + studentData.full_name.split(' ')[0].toUpperCase();

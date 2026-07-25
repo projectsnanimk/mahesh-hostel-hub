@@ -783,7 +783,11 @@
                   <option value="4">4th Year</option>
                 </select>
               </div>
-              <div style="flex:1;">
+              <div style="flex:1.5;">
+                <label class="form-label" for="registerNo">Register Number *</label>
+                <input class="form-input" type="text" id="registerNo" placeholder="e.g. 22B91A0501" required>
+              </div>
+              <div style="flex:1.2;">
                 <label class="form-label" for="dob">Date of Birth *</label>
                 <input class="form-input" type="date" id="dob" required>
               </div>
@@ -943,6 +947,10 @@
             <div>
               <span style="color: #94a3b8; font-weight: 600;">Full Name</span>
               <div id="viewFullName" style="color: #f1f5f9; font-weight: 700; margin-top: 2px;">-</div>
+            </div>
+            <div>
+              <span style="color: #94a3b8; font-weight: 600;">Register Number</span>
+              <div id="viewRegisterNo" style="color: #f1f5f9; font-weight: 700; margin-top: 2px;">-</div>
             </div>
             <div>
               <span style="color: #94a3b8; font-weight: 600;">Date of Birth</span>
@@ -1470,7 +1478,10 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><strong>${student.student_id}</strong></td>
-          <td>${student.full_name}</td>
+          <td>
+            <div>${student.full_name}</div>
+            <div style="font-size:0.75rem; color:var(--text-staff-secondary);">Reg No: ${student.register_no || 'N/A'}</div>
+          </td>
           <td>Block ${student.hostel_id}</td>
           <td>Room ${student.room_number}</td>
           <td>${student.stream || '-'} (${student.year ? student.year + ' Yr' : '-'})</td>
@@ -1519,7 +1530,10 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><strong>${student.student_id}</strong></td>
-          <td>${student.full_name}</td>
+          <td>
+            <div>${student.full_name}</div>
+            <div style="font-size:0.75rem; color:var(--text-staff-secondary);">Reg No: ${student.register_no || 'N/A'}</div>
+          </td>
           <td>Block ${student.hostel_id}</td>
           <td>${student.room_number}</td>
           <td><span class="${statusClass}">${student.current_status}</span></td>
@@ -1562,6 +1576,7 @@
         // Populate fields
         document.getElementById('viewStudentId').innerText = student.student_id;
         document.getElementById('viewFullName').innerText = student.full_name;
+        document.getElementById('viewRegisterNo').innerText = student.register_no || 'N/A';
         document.getElementById('viewDob').innerText = student.dob ? new Date(student.dob).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
         document.getElementById('viewBloodGroup').innerText = student.blood_group || 'N/A';
         document.getElementById('viewAadhar').innerText = student.aadhar_no || '-';
@@ -1783,6 +1798,7 @@
 
       const extraData = {
         year: document.getElementById('year').value,
+        register_no: document.getElementById('registerNo').value.trim(),
         parent_name: document.getElementById('parentName').value.trim(),
         blood_group: document.getElementById('bloodGroup').value.trim(),
         aadhar_no: document.getElementById('aadharNo').value.trim(),

@@ -302,7 +302,11 @@
                   <option value="4">4th Year</option>
                 </select>
               </div>
-              <div style="flex:1;">
+              <div style="flex:1.5;">
+                <label class="form-label" for="registerNo">Register Number *</label>
+                <input class="form-input" type="text" id="registerNo" placeholder="e.g. 22B91A0501" required>
+              </div>
+              <div style="flex:1.2;">
                 <label class="form-label" for="dob">Date of Birth *</label>
                 <input class="form-input" type="date" id="dob" required>
               </div>
@@ -660,7 +664,10 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><strong>${student.student_id}</strong></td>
-          <td>${student.full_name}</td>
+          <td>
+            <div>${student.full_name}</div>
+            <div style="font-size:0.75rem; color:var(--text-staff-secondary);">Reg No: ${student.register_no || 'N/A'}</div>
+          </td>
           <td>Block ${student.hostel_id}</td>
           <td>${student.room_number}</td>
           <td>${statusHtml}</td>
@@ -946,6 +953,7 @@
 
       const extraData = {
         year: document.getElementById('year').value,
+        register_no: document.getElementById('registerNo').value.trim(),
         parent_name: document.getElementById('parentName').value.trim(),
         blood_group: document.getElementById('bloodGroup').value.trim(),
         aadhar_no: document.getElementById('aadharNo').value.trim(),
