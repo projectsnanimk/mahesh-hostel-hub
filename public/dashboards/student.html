@@ -439,7 +439,15 @@
         <button class="portal-modal-close" onclick="closePortalModal('studentDetailsModal')">&times;</button>
       </div>
       <div class="portal-modal-body">
-        <p style="margin-bottom: 20px; font-size: 0.9rem; color: #64748b;">These are your official registration details verified during hostel admission. For corrections, please contact the Central Administration office.</p>
+        <!-- Large Interactive Avatar Box -->
+        <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 25px; gap: 10px;">
+          <div id="profilePhotoFrame" onclick="triggerPhotoUpload()" style="width: 110px; height: 110px; border-radius: 50%; background: linear-gradient(135deg, #4f46e5, #0d9488); display: flex; align-items: center; justify-content: center; font-size: 3rem; color: white; border: 3px solid rgba(255,255,255,0.1); cursor: pointer; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.3); overflow: hidden; transition: transform 0.2s;" class="hover-scale">
+            🎓
+            <div id="photoUploadOverlay" style="position: absolute; bottom: 0; left: 0; right: 0; height: 35px; background: rgba(0,0,0,0.65); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: #38bdf8;">UPLOAD</div>
+          </div>
+          <span style="font-size: 0.75rem; color: #94a3b8;" id="photoUploadInstruction">*Click avatar to upload your profile photo (one-time lock).</span>
+        </div>
+
         <div class="profile-grid" id="profileGrid">
           <div class="profile-item">
             <span class="profile-label">Student ID</span>
@@ -818,7 +826,8 @@
     </div>
     <div class="nav-user">
       <div class="user-badge">
-        <div class="user-avatar" id="navAvatar">U</div>
+        <div class="user-avatar" id="navAvatar" onclick="triggerPhotoUpload()" style="cursor: pointer;" title="Upload Photo">U</div>
+        <input type="file" id="studentPhotoInput" accept="image/*" style="display:none;" onchange="handlePhotoSelected(event)">
         <div class="user-info">
           <span class="user-name" id="navName">Student Name</span>
           <span class="user-role-label">Registered Student</span>
@@ -981,6 +990,29 @@
           // Set Header badge
           document.getElementById('navName').innerText = studentData.full_name;
           document.getElementById('navAvatar').innerText = studentData.full_name.charAt(0);
+
+          if (studentData.photo) {
+            const navAv = document.getElementById('navAvatar');
+            navAv.innerText = '';
+            navAv.style.backgroundImage = `url(${studentData.photo})`;
+            navAv.style.backgroundSize = 'cover';
+            navAv.style.backgroundPosition = 'center';
+            navAv.title = "Profile Photo Uploaded";
+
+            const profFrame = document.getElementById('profilePhotoFrame');
+            if (profFrame) {
+              profFrame.innerHTML = '';
+              profFrame.style.backgroundImage = `url(${studentData.photo})`;
+              profFrame.style.backgroundSize = 'cover';
+              profFrame.style.backgroundPosition = 'center';
+              profFrame.style.cursor = 'default';
+            }
+            const instruction = document.getElementById('photoUploadInstruction');
+            if (instruction) {
+              instruction.innerText = 'Profile Photo Locked (One-Time Upload Complete) ✔';
+              instruction.style.color = '#2dd4bf';
+            }
+          }
 
           // Populate Grid
           document.getElementById('profileId').innerText = studentData.student_id;
@@ -1420,6 +1452,17 @@
         document.getElementById('passHostelBlock').innerText = `Block ${studentData.hostel_id}`;
         document.getElementById('passRoomNo').innerText = studentData.room_number;
         document.getElementById('passRegisterNo').innerText = studentData.register_no || 'N/A';
+
+        const passAvatar = document.getElementById('passAvatar');
+        if (studentData.photo) {
+          passAvatar.innerText = '';
+          passAvatar.style.backgroundImage = `url(${studentData.photo})`;
+          passAvatar.style.backgroundSize = 'cover';
+          passAvatar.style.backgroundPosition = 'center';
+        } else {
+          passAvatar.innerText = '🎓';
+          passAvatar.style.backgroundImage = '';
+        }
         
         // Generate unique token code
         const uniqueToken = 'GP-' + studentData.hostel_id + '-' + studentData.student_id.slice(-6) + '-' + studentData.full_name.split(' ')[0].toUpperCase();
@@ -1552,6 +1595,77 @@
       container.innerHTML = html;
     }
     window.switchWifiBlock = switchWifiBlock;
+
+    // Profile photo upload helpers
+    function triggerPhotoUpload() {
+      if (!studentData) return;
+      
+      // If photo is already uploaded, lock it!
+      if (studentData.photo) {
+        showToast("Profile photo has already been uploaded and locked.", "info");
+        return;
+      }
+
+      const input = document.getElementById('studentPhotoInput');
+      if (input) {
+        input.value = ''; // clear first
+        input.click();
+      }
+    }
+
+    function handlePhotoSelected(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // Validate format
+      if (!file.type.startsWith('image/')) {
+        showToast("Invalid file type. Please select an image.", "error");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          // Compress & resize image to 150x150 on canvas
+          const canvas = document.createElement('canvas');
+          canvas.width = 150;
+          canvas.height = 150;
+          const ctx = canvas.getContext('2d');
+          
+          // Draw centered square crop
+          const minDim = Math.min(img.width, img.height);
+          const sx = (img.width - minDim) / 2;
+          const sy = (img.height - minDim) / 2;
+          
+          ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, 150, 150);
+          
+          // Convert to compressed jpeg data url
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+          // Save photo in localStorage db
+          try {
+            const updatedStudent = HostelHubDB.updateStudentPhoto(studentData.student_id, compressedDataUrl);
+            if (updatedStudent) {
+              studentData.photo = compressedDataUrl;
+              showToast("Profile photo uploaded and verified successfully!", "success");
+              loadProfile(); // refresh all displays
+            } else {
+              showToast("Failed to save profile photo to storage.", "error");
+            }
+          } catch(err) {
+            console.error(err);
+            showToast("Database update error.", "error");
+          }
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Bind to window context
+    window.triggerPhotoUpload = triggerPhotoUpload;
+    window.handlePhotoSelected = handlePhotoSelected;
 
     // Bootstrap profile loader
     window.onload = loadProfile;

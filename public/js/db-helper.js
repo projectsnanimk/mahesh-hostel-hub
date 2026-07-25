@@ -316,6 +316,17 @@ const db = {
     return null;
   },
 
+  updateStudentPhoto: (studentId, photoBase64) => {
+    const dbState = getDb();
+    const student = dbState.students.find(s => s.student_id === studentId);
+    if (student) {
+      student.photo = photoBase64;
+      saveDb(dbState);
+      return student;
+    }
+    return null;
+  },
+
   approveStudent: (studentId) => {
     const dbState = getDb();
     const student = dbState.students.find(s => s.student_id === studentId);
