@@ -783,13 +783,20 @@
                   <option value="4">4th Year</option>
                 </select>
               </div>
-              <div style="flex:1.5;">
+              <div style="flex:1;">
                 <label class="form-label" for="registerNo">Register Number *</label>
                 <input class="form-input" type="text" id="registerNo" placeholder="e.g. 22B91A0501" required>
               </div>
-              <div style="flex:1.2;">
+            </div>
+
+            <div class="form-group" style="display:flex; gap:10px;">
+              <div style="flex:1;">
                 <label class="form-label" for="dob">Date of Birth *</label>
                 <input class="form-input" type="date" id="dob" required>
+              </div>
+              <div style="flex:1;">
+                <label class="form-label" for="bloodGroup">Blood Group</label>
+                <input class="form-input" type="text" id="bloodGroup" placeholder="e.g. O+">
               </div>
             </div>
 
@@ -799,14 +806,9 @@
                 <input class="form-input" type="text" id="parentName" placeholder="Father or Mother" required>
               </div>
               <div style="flex:1;">
-                <label class="form-label" for="bloodGroup">Blood Group</label>
-                <input class="form-input" type="text" id="bloodGroup" placeholder="e.g. O+">
+                <label class="form-label" for="aadharNo">Aadhar No *</label>
+                <input class="form-input" type="text" id="aadharNo" placeholder="12-digit Aadhar" required pattern="\d{12}" title="Aadhar number must be exactly 12 digits.">
               </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="aadharNo">Aadhar No *</label>
-              <input class="form-input" type="text" id="aadharNo" placeholder="12-digit Aadhar" required pattern="\d{12}" title="Aadhar number must be exactly 12 digits.">
             </div>
 
             <div class="form-group" style="display:flex; gap:10px;">
