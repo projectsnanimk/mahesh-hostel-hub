@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MAHESH HOSTELS STAFF PORTAL - Accountant Dashboard</title>
   <link rel="stylesheet" href="/css/styles.css">
-  <script src="/js/db-helper.js"></script>
+  <script src="/js/db-helper.js?v=1.1"></script>
   <style>
     /* Premium Dashboard Overrides */
     .brand {
@@ -888,7 +888,7 @@
         if (err.message === 'INGREDIENT_EXISTS') {
           showToast(`Error: Ingredient '${name}' already exists in kitchen inventory.`, 'error');
         } else {
-          showToast('Database error registering ingredient.', 'error');
+          showToast('Database error registering ingredient: ' + err.message, 'error');
           console.error(err);
         }
       }
