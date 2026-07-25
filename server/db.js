@@ -244,13 +244,18 @@ const db = {
 
   addKitchenAsset: async (ingredientName, quantityKg, alertThresholdKg) => {
     if (useFallback) {
-      const exists = dbMemory.central_kitchen_assets.some(a => a.ingredient_name.toLowerCase() === ingredientName.toLowerCase());
+      if (!dbMemory.central_kitchen_assets || !Array.isArray(dbMemory.central_kitchen_assets)) {
+        dbMemory.central_kitchen_assets = [];
+      }
+      const exists = dbMemory.central_kitchen_assets.some(a => 
+        a && a.ingredient_name && a.ingredient_name.toLowerCase() === ingredientName.toLowerCase()
+      );
       if (exists) throw new Error('Ingredient name already exists.');
       const newAsset = {
         asset_id: dbMemory.central_kitchen_assets.length + 1,
         ingredient_name: ingredientName,
-        stock_quantity_kg: parseFloat(quantityKg),
-        alert_threshold_kg: parseFloat(alertThresholdKg),
+        stock_quantity_kg: parseFloat(quantityKg) || 0.00,
+        alert_threshold_kg: parseFloat(alertThresholdKg) || 10.00,
         last_updated: new Date()
       };
       dbMemory.central_kitchen_assets.push(newAsset);

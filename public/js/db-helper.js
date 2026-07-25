@@ -475,8 +475,15 @@ const db = {
 
   addKitchenAsset: (ingredientName, quantityKg, alertThresholdKg) => {
     const dbState = getDb();
-    if (!dbState.central_kitchen_assets) dbState.central_kitchen_assets = [];
-    const exists = dbState.central_kitchen_assets.some(a => a.ingredient_name.toLowerCase() === ingredientName.trim().toLowerCase());
+    if (!dbState.central_kitchen_assets || !Array.isArray(dbState.central_kitchen_assets)) {
+      dbState.central_kitchen_assets = [];
+    }
+    if (!ingredientName) {
+      throw new Error('INVALID_NAME');
+    }
+    const exists = dbState.central_kitchen_assets.some(a => 
+      a && a.ingredient_name && a.ingredient_name.toLowerCase() === ingredientName.trim().toLowerCase()
+    );
     if (exists) {
       throw new Error('INGREDIENT_EXISTS');
     }
