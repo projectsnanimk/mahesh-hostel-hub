@@ -242,8 +242,11 @@
     <div id="tab-kitchen" class="tab-content">
       <div class="card">
         <div class="table-actions">
-          <h2 class="card-title">Central Kitchen Ingredients supply</h2>
-          <span style="font-size:0.8rem; color:var(--text-staff-secondary);">*Update stock levels or log used kitchen quantities</span>
+          <div>
+            <h2 class="card-title">Central Kitchen Ingredients supply</h2>
+            <span style="font-size:0.8rem; color:var(--text-staff-secondary); margin-top:4px; display:inline-block;">*Update stock levels or log used kitchen quantities</span>
+          </div>
+          <button class="btn-primary" onclick="openAddIngredientModal()" style="background:#0d9488;">+ Add Ingredient</button>
         </div>
         
         <div class="asset-table-wrapper">
@@ -505,6 +508,32 @@
         </div>
 
         <button class="btn-submit" type="submit" style="background:#0d9488;">Apply Adjustment</button>
+      </form>
+    </div>
+  <!-- Add Ingredient Modal -->
+  <div class="modal" id="addIngredientModal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeAddIngredientModal()">×</span>
+      <h2 class="login-title" style="margin-bottom: 20px;">Add Kitchen Ingredient</h2>
+      
+      <form id="addIngredientForm">
+        <div class="form-group">
+          <label class="form-label" for="newIngredientName">Ingredient Name *</label>
+          <input class="form-input" type="text" id="newIngredientName" placeholder="e.g. Tomato / Onion" required>
+        </div>
+
+        <div class="form-group" style="display: flex; gap: 15px;">
+          <div style="flex: 1;">
+            <label class="form-label" for="newIngredientQty">Initial Stock Qty (KG) *</label>
+            <input class="form-input" type="number" step="0.01" id="newIngredientQty" placeholder="e.g. 50.00" required min="0">
+          </div>
+          <div style="flex: 1;">
+            <label class="form-label" for="newIngredientThreshold">Safety Threshold (KG) *</label>
+            <input class="form-input" type="number" step="0.01" id="newIngredientThreshold" placeholder="e.g. 10.00" required min="0">
+          </div>
+        </div>
+
+        <button class="btn-submit" type="submit" style="background:#0d9488; margin-top: 10px;">Save Ingredient</button>
       </form>
     </div>
   </div>
@@ -828,6 +857,39 @@
         }
       } catch (err) {
         showToast('Database error processing stock adjustments.', 'error');
+      }
+    });
+
+    // Add Kitchen Ingredient Module
+    function openAddIngredientModal() {
+      document.getElementById('newIngredientName').value = '';
+      document.getElementById('newIngredientQty').value = '';
+      document.getElementById('newIngredientThreshold').value = '';
+      document.getElementById('addIngredientModal').classList.add('show');
+    }
+
+    function closeAddIngredientModal() {
+      document.getElementById('addIngredientModal').classList.remove('show');
+    }
+
+    document.getElementById('addIngredientForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('newIngredientName').value.trim();
+      const qty = parseFloat(document.getElementById('newIngredientQty').value);
+      const threshold = parseFloat(document.getElementById('newIngredientThreshold').value);
+
+      try {
+        HostelHubDB.addKitchenAsset(name, qty, threshold);
+        showToast(`Ingredient '${name}' registered successfully with ${qty} KG stock.`, 'success');
+        closeAddIngredientModal();
+        loadKitchenMetrics();
+      } catch (err) {
+        if (err.message === 'INGREDIENT_EXISTS') {
+          showToast(`Error: Ingredient '${name}' already exists in kitchen inventory.`, 'error');
+        } else {
+          showToast('Database error registering ingredient.', 'error');
+          console.error(err);
+        }
       }
     });
 

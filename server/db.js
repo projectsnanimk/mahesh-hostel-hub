@@ -242,6 +242,28 @@ const db = {
     return res.rows[0];
   },
 
+  addKitchenAsset: async (ingredientName, quantityKg, alertThresholdKg) => {
+    if (useFallback) {
+      const exists = dbMemory.central_kitchen_assets.some(a => a.ingredient_name.toLowerCase() === ingredientName.toLowerCase());
+      if (exists) throw new Error('Ingredient name already exists.');
+      const newAsset = {
+        asset_id: dbMemory.central_kitchen_assets.length + 1,
+        ingredient_name: ingredientName,
+        stock_quantity_kg: parseFloat(quantityKg),
+        alert_threshold_kg: parseFloat(alertThresholdKg),
+        last_updated: new Date()
+      };
+      dbMemory.central_kitchen_assets.push(newAsset);
+      return newAsset;
+    }
+    const res = await pool.query(
+      `INSERT INTO central_kitchen_assets (ingredient_name, stock_quantity_kg, alert_threshold_kg) 
+       VALUES ($1, $2, $3) RETURNING *`,
+      [ingredientName, quantityKg, alertThresholdKg]
+    );
+    return res.rows[0];
+  },
+
   // STAFF USERS
   getStaffUserById: async (userId) => {
     if (useFallback) {

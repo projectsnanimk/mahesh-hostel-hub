@@ -473,6 +473,24 @@ const db = {
     return null;
   },
 
+  addKitchenAsset: (ingredientName, quantityKg, alertThresholdKg) => {
+    const dbState = getDb();
+    if (!dbState.central_kitchen_assets) dbState.central_kitchen_assets = [];
+    const exists = dbState.central_kitchen_assets.some(a => a.ingredient_name.toLowerCase() === ingredientName.trim().toLowerCase());
+    if (exists) {
+      throw new Error('INGREDIENT_EXISTS');
+    }
+    const newAsset = {
+      asset_id: dbState.central_kitchen_assets.length + 1,
+      ingredient_name: ingredientName.trim(),
+      stock_quantity_kg: parseFloat(quantityKg) || 0.00,
+      alert_threshold_kg: parseFloat(alertThresholdKg) || 10.00
+    };
+    dbState.central_kitchen_assets.push(newAsset);
+    saveDb(dbState);
+    return newAsset;
+  },
+
   // Watchman operations
   addGateLog: (studentId, actionType, watchmanId, watchmanHostel) => {
     const dbState = getDb();
