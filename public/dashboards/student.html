@@ -636,6 +636,19 @@
             <p style="font-size:0.85rem; color:#64748b;">24/7 power backup and purified drinking water stations on every floor.</p>
           </div>
         </div>
+
+        <!-- Wi-Fi Details Section -->
+        <div style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+          <h4 style="color: #38bdf8; margin-top: 0; margin-bottom: 12px; font-size: 1rem; display: flex; align-items: center; gap: 8px;">
+            <span>📶</span> High-Speed Wi-Fi Directory
+          </h4>
+          <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 15px;">Connect to the router on your respective floor using the credentials below:</p>
+          
+          <div id="wifiDetailsContainer" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 15px;">
+            <div style="text-align: center; color: #64748b; font-size: 0.9rem; padding: 10px 0;">Loading Wi-Fi directory...</div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -1279,6 +1292,8 @@
       if (modal) {
         if (modalId === 'feeDetailsModal') {
           loadFeeAndPaymentDetails();
+        } else if (modalId === 'aboutModal') {
+          renderWifiDetails();
         }
         modal.classList.add('show');
       }
@@ -1457,6 +1472,76 @@
       `);
       win.document.close();
     }
+
+    // Wi-Fi Details Directory Helpers
+    function renderWifiDetails() {
+      if (!studentData) return;
+      const block = (studentData.hostel_id || 'M1').toUpperCase();
+      switchWifiBlock(block);
+    }
+
+    function switchWifiBlock(block) {
+      const container = document.getElementById('wifiDetailsContainer');
+      if (!container) return;
+
+      let wifiList = [];
+      if (block === 'M1') {
+        wifiList = [
+          { ssid: 'MG1', floor: 'Ground Floor (G1)' },
+          { ssid: 'MG2', floor: 'Ground Floor (G2)' },
+          { ssid: 'MF1', floor: 'First Floor (F1)' },
+          { ssid: 'MF2', floor: 'First Floor (F2)' },
+          { ssid: 'MS1', floor: 'Second Floor (S1)' },
+          { ssid: 'MS2', floor: 'Second Floor (S2)' }
+        ];
+      } else if (block === 'M2') {
+        wifiList = [
+          { ssid: 'M2G1', floor: 'Ground Floor (G1)' },
+          { ssid: 'M2G2', floor: 'Ground Floor (G2)' },
+          { ssid: 'M2F1', floor: 'First Floor (F1)' },
+          { ssid: 'M2F2', floor: 'First Floor (F2)' },
+          { ssid: 'M2S1', floor: 'Second Floor (S1)' },
+          { ssid: 'M2S2', floor: 'Second Floor (S2)' }
+        ];
+      } else if (block === 'M3') {
+        wifiList = [
+          { ssid: 'M3G1', floor: 'Ground Floor (G1)' },
+          { ssid: 'M3G2', floor: 'Ground Floor (G2)' },
+          { ssid: 'M3F1', floor: 'First Floor (F1)' },
+          { ssid: 'M3F2', floor: 'First Floor (F2)' },
+          { ssid: 'M3S1', floor: 'Second Floor (S1)' },
+          { ssid: 'M3S2', floor: 'Second Floor (S2)' }
+        ];
+      }
+
+      let html = `<div style="font-weight: 700; color: white; margin-bottom: 12px; font-size: 0.95rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px; display: flex; justify-content: space-between;">
+                    <span>📍 Block ${block} Wi-Fi Networks</span>
+                    <span style="color: #2dd4bf; font-size: 0.85rem;">Password: mahesh@123</span>
+                  </div>`;
+      
+      html += `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">`;
+      wifiList.forEach(wifi => {
+        html += `
+          <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
+            <span style="font-size: 0.75rem; color: #94a3b8; display: block;">${wifi.floor}</span>
+            <code style="font-size: 0.9rem; color: #38bdf8; font-weight: 700; display: block; margin-top: 2px;">SSID: ${wifi.ssid}</code>
+            <code style="font-size: 0.8rem; color: #64748b; display: block; margin-top: 1px;">Key: mahesh@123</code>
+          </div>
+        `;
+      });
+      html += `</div>`;
+
+      // Option to toggle and view other block details
+      html += `<div style="margin-top: 15px; text-align: center; border-top: 1px dashed rgba(255,255,255,0.06); padding-top: 10px; display: flex; justify-content: center; gap: 15px; align-items: center;">
+                <span style="font-size: 0.75rem; color: #64748b;">View other blocks:</span>
+                <a href="#" onclick="switchWifiBlock('M1'); return false;" style="font-size: 0.75rem; font-weight:600; color: ${block === 'M1' ? '#c084fc' : '#94a3b8'}; text-decoration: none;">Block M1</a>
+                <a href="#" onclick="switchWifiBlock('M2'); return false;" style="font-size: 0.75rem; font-weight:600; color: ${block === 'M2' ? '#c084fc' : '#94a3b8'}; text-decoration: none;">Block M2</a>
+                <a href="#" onclick="switchWifiBlock('M3'); return false;" style="font-size: 0.75rem; font-weight:600; color: ${block === 'M3' ? '#c084fc' : '#94a3b8'}; text-decoration: none;">Block M3</a>
+               </div>`;
+
+      container.innerHTML = html;
+    }
+    window.switchWifiBlock = switchWifiBlock;
 
     // Bootstrap profile loader
     window.onload = loadProfile;
