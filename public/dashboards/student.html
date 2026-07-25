@@ -1297,9 +1297,15 @@
         const category = document.getElementById('feedbackCategory').value;
         const comments = document.getElementById('feedbackComments').value;
 
-        showToast(`Thank you! Your feedback for "${category}" (${rating}★) has been received.`, 'success');
-        document.getElementById('feedbackComments').value = '';
-        closePortalModal('feedbackModal');
+        try {
+          HostelHubDB.submitFeedback(token, category, rating, comments);
+          showToast(`Thank you! Your feedback for "${category}" (${rating}★) has been received.`, 'success');
+          document.getElementById('feedbackComments').value = '';
+          closePortalModal('feedbackModal');
+        } catch (err) {
+          showToast('Failed to save feedback.', 'error');
+          console.error(err);
+        }
       });
     }
 

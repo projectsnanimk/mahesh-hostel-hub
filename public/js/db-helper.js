@@ -103,6 +103,12 @@ const DEFAULT_STUDENTS = [
   }
 ];
 
+const DEFAULT_FEEDBACKS = [
+  { feedback_id: 1, student_id: 'M1120726001', category: 'Food & Mess Quality', rating: 4, comments: 'The Sunday Biryani was delicious, but please improve the Tuesday breakfast Dosa.', created_at: new Date(Date.now() - 86400000 * 2).toISOString() },
+  { feedback_id: 2, student_id: 'M2120726001', category: 'Internet & Wi-Fi', rating: 3, comments: 'Wi-Fi speed is slow in the evening hours between 8 PM to 10 PM.', created_at: new Date(Date.now() - 86400000).toISOString() },
+  { feedback_id: 3, student_id: 'M3120726001', category: 'Room Maintenance', rating: 5, comments: 'AC maintenance was completed on time. Friendly support staff!', created_at: new Date().toISOString() }
+];
+
 // Initialize localStorage DB if empty or missing keys
 function initStorageDb() {
   let db = {};
@@ -122,6 +128,7 @@ function initStorageDb() {
   if (!db.students || (db.students.length > 0 && !db.students[0].parent_name)) { db.students = DEFAULT_STUDENTS; changed = true; }
   if (!db.mess_attendance_logs) { db.mess_attendance_logs = []; changed = true; }
   if (!db.gate_logs) { db.gate_logs = []; changed = true; }
+  if (!db.feedbacks) { db.feedbacks = DEFAULT_FEEDBACKS; changed = true; }
   
   if (changed || !raw) {
     localStorage.setItem('hostelhub_db', JSON.stringify(db));
@@ -510,6 +517,34 @@ const db = {
       logs = logs.filter(log => log.hostel_id === watchmanHostel);
     }
     return logs;
+  },
+
+  submitFeedback: (studentId, category, rating, comments) => {
+    const dbState = getDb();
+    if (!dbState.feedbacks) dbState.feedbacks = [];
+    const newFeedback = {
+      feedback_id: dbState.feedbacks.length + 1,
+      student_id: studentId,
+      category: category,
+      rating: parseInt(rating),
+      comments: comments,
+      created_at: new Date().toISOString()
+    };
+    dbState.feedbacks.push(newFeedback);
+    saveDb(dbState);
+    return newFeedback;
+  },
+
+  getFeedbacks: () => {
+    const dbState = getDb();
+    if (!dbState.feedbacks) dbState.feedbacks = [];
+    return dbState.feedbacks.map(fb => {
+      const student = dbState.students.find(s => s.student_id === fb.student_id);
+      return {
+        ...fb,
+        student_name: student ? student.full_name : 'Unknown Student'
+      };
+    }).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
   }
 };
 
