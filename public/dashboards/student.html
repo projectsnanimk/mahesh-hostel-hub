@@ -418,6 +418,12 @@
           <span>6. Gallery</span>
         </a>
       </li>
+      <li class="drawer-menu-item">
+        <a class="drawer-menu-link" id="navGatePassBtn">
+          <span class="drawer-menu-icon">🎟️</span>
+          <span>7. Permanent Gate Pass</span>
+        </a>
+      </li>
     </ul>
 
     <div class="drawer-footer">
@@ -711,6 +717,71 @@
             <div class="gallery-desc">Indoor games and gym equipment for student wellness.</div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 7: Permanent Gate Pass -->
+  <div class="portal-modal-overlay" id="gatePassModal">
+    <div class="portal-modal-card" style="max-width: 500px; padding: 25px;">
+      <div class="portal-modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
+        <div class="portal-modal-title"><span>🎟️</span> Permanent Gate Pass</div>
+        <button class="portal-modal-close" onclick="closePortalModal('gatePassModal')">&times;</button>
+      </div>
+      <div class="portal-modal-body" style="padding-top: 20px;">
+        
+        <!-- Beautiful Gate Pass Card container -->
+        <div id="gatePassPrintable" style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); border: 2px solid #4f46e5; border-radius: 16px; padding: 25px; text-align: center; color: white; position: relative; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5); overflow: hidden;">
+          
+          <!-- Watermark background shape -->
+          <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: rgba(79, 70, 229, 0.15); border-radius: 50%; filter: blur(30px); pointer-events: none;"></div>
+          <div style="position: absolute; bottom: -50px; left: -50px; width: 150px; height: 150px; background: rgba(13, 148, 136, 0.15); border-radius: 50%; filter: blur(30px); pointer-events: none;"></div>
+          
+          <!-- Card Header -->
+          <div style="font-size: 0.75rem; letter-spacing: 2px; color: #a5b4fc; font-weight: 800; text-transform: uppercase; margin-bottom: 5px;">Mahesh Hostels Pvt Ltd</div>
+          <div style="font-size: 1.1rem; font-weight: 800; color: white; margin-bottom: 20px; border-bottom: 1px dashed rgba(255,255,255,0.15); padding-bottom: 10px;">OFFICIAL GATE PASS</div>
+
+          <!-- Avatar / ID icon -->
+          <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #4f46e5, #0d9488); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; margin: 0 auto 15px auto; border: 3px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.3);" id="passAvatar">
+            🎓
+          </div>
+
+          <!-- Student Meta info -->
+          <h3 id="passStudentName" style="font-size: 1.25rem; font-weight: 700; margin-bottom: 6px; color: white;">-</h3>
+          <div style="font-family: monospace; font-size: 0.95rem; font-weight: 700; color: #38bdf8; margin-bottom: 15px;" id="passStudentId">ID: -</div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); font-size: 0.85rem; margin-bottom: 20px;">
+            <div>
+              <span style="color:#94a3b8; font-size:0.75rem; display:block;">HOSTEL BLOCK</span>
+              <strong id="passHostelBlock" style="color: white;">-</strong>
+            </div>
+            <div>
+              <span style="color:#94a3b8; font-size:0.75rem; display:block;">ROOM NO</span>
+              <strong id="passRoomNo" style="color: white;">-</strong>
+            </div>
+            <div style="grid-column: span 2;">
+              <span style="color:#94a3b8; font-size:0.75rem; display:block;">SECURITY PASS TOKEN</span>
+              <strong id="passTokenCode" style="color: #2dd4bf; font-family: monospace;">-</strong>
+            </div>
+          </div>
+
+          <!-- Unique QR Code Container -->
+          <div style="display: flex; justify-content: center; margin-bottom: 12px;">
+            <div id="gatePassQr" style="background: white; padding: 10px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.25);"></div>
+          </div>
+          <span style="font-size: 0.75rem; color: #94a3b8;">*Show this QR code at the gate scanner to log entry/exit.</span>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button class="portal-btn" onclick="printGatePass()" style="background: #4f46e5; flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 8px; color: white; padding: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+            <span>🖨️</span> Print / Save Pass
+          </button>
+          <button class="portal-btn" onclick="closePortalModal('gatePassModal')" style="background: #475569; width: 100px; border: none; border-radius: 8px; color: white; padding: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+            Close
+          </button>
+        </div>
+
       </div>
     </div>
   </div>
@@ -1262,6 +1333,11 @@
       openPortalModal('galleryModal');
     });
 
+    document.getElementById('navGatePassBtn').addEventListener('click', () => {
+      generateGatePass();
+      openPortalModal('gatePassModal');
+    });
+
     // Star Rating Logic
     const stars = document.querySelectorAll('#starRating .star');
     const selectedRatingInput = document.getElementById('selectedRating');
@@ -1307,6 +1383,79 @@
           console.error(err);
         }
       });
+    }
+
+    // Student Gate Pass Generator helper
+    function generateGatePass() {
+      if (!studentData) return;
+
+      try {
+        // Populate card details
+        document.getElementById('passStudentName').innerText = studentData.full_name;
+        document.getElementById('passStudentId').innerText = `ID: ${studentData.student_id}`;
+        document.getElementById('passHostelBlock').innerText = `Block ${studentData.hostel_id}`;
+        document.getElementById('passRoomNo').innerText = studentData.room_number;
+        
+        // Generate unique token code
+        const uniqueToken = 'GP-' + studentData.hostel_id + '-' + studentData.student_id.slice(-6) + '-' + studentData.full_name.split(' ')[0].toUpperCase();
+        document.getElementById('passTokenCode').innerText = uniqueToken;
+
+        // Clear old QR code container
+        const qrContainer = document.getElementById('gatePassQr');
+        qrContainer.innerHTML = '';
+
+        // Generate QR code encoding the unique student ID
+        new QRCode(qrContainer, {
+          text: studentData.student_id,
+          width: 140,
+          height: 140,
+          colorDark: "#0f172a",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.M
+        });
+
+      } catch (err) {
+        console.error('Error generating gate pass:', err);
+      }
+    }
+
+    function printGatePass() {
+      const cardHtml = document.getElementById('gatePassPrintable').outerHTML;
+      const win = window.open('', '_blank', 'width=600,height=700');
+      win.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Mahesh Hostels - Student Gate Pass</title>
+            <style>
+              body {
+                background: #0f172a;
+                margin: 0;
+                padding: 40px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                font-family: system-ui, -apple-system, sans-serif;
+              }
+              #gatePassPrintable {
+                width: 350px !important;
+                margin: 0 auto !important;
+              }
+            </style>
+          </head>
+          <body>
+            \${cardHtml}
+            <script>
+              setTimeout(() => {
+                window.print();
+                window.close();
+              }, 500);
+            <\/script>
+          </body>
+        </html>
+      `);
+      win.document.close();
     }
 
     // Bootstrap profile loader
