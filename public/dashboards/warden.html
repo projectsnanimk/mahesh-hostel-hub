@@ -163,9 +163,9 @@
         </a>
       </li>
       <li class="drawer-menu-item">
-        <a class="drawer-menu-link" onclick="handleDrawerNav('tab-profile')">
+        <a class="drawer-menu-link" onclick="handleDrawerNav('tab-myidcard')">
           <span class="drawer-menu-icon">📇</span>
-          <span>3. My ID Card & Details</span>
+          <span>3. Myidcard & MyDetails</span>
         </a>
       </li>
       <li class="drawer-menu-item">
@@ -209,8 +209,8 @@
          -------------------------------------------------- -->
     <div id="tab-home" class="tab-content active">
       <div class="dashboard-grid">
-        <!-- Active Scanning Module (Centered and full width) -->
-        <div class="card" style="grid-column: span 12; max-width: 620px; margin: 0 auto; width: 100%;">
+        <!-- Active Scanning Module -->
+        <div class="card" style="grid-column: span 6;">
           <h2 class="card-title">Mess Scanner Terminal</h2>
           <p style="color: var(--text-staff-secondary); font-size: 0.9rem; margin-bottom: 20px;">
             Emulate dynamic QR tracking below. Scan student barcodes to check meal slots and prevent multiple servings.
@@ -260,16 +260,25 @@
             </div>
           </div>
 
-          <form id="scanQrForm" style="margin-bottom: 0;">
+          <form id="scanQrForm">
             <div class="form-group">
               <label class="form-label" for="qrToken">Scan QR Token string</label>
               <input class="form-input" type="text" id="qrToken" placeholder="Paste Student JSON QR Payload" required autocomplete="off">
             </div>
             <button class="btn-submit" type="submit" style="background:var(--staff-accent);">Validate Student Scan</button>
           </form>
+        </div>
 
-          <!-- Hidden list container to prevent JS runtime exceptions while keeping memory operations correct -->
-          <ul id="scanLogsContainer" style="display: none;"></ul>
+        <!-- Real-Time Transactions & Info -->
+        <div class="card" style="grid-column: span 6; display: flex; flex-direction: column;">
+          <h2 class="card-title">Recent Portion Scans</h2>
+          <div style="flex-grow: 1; border: 1px solid var(--border-staff); border-radius: var(--radius-sm); padding: 15px; background: rgba(0,0,0,0.1);">
+            <ul class="scan-log-list" id="scanLogsContainer">
+              <li class="scan-log-item" style="color: var(--text-staff-secondary); text-align: center; justify-content: center; padding: 40px 0;">
+                No scans executed in this session.
+              </td>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -311,7 +320,7 @@
     <!-- --------------------------------------------------
          TAB 3: MY IDCARD & MY DETAILS
          -------------------------------------------------- -->
-    <div id="tab-profile" class="tab-content">
+    <div id="tab-myidcard" class="tab-content">
       <div class="dashboard-grid">
         <!-- Warden Details Card -->
         <div class="card" style="grid-column: span 6;">
