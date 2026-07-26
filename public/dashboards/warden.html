@@ -8,6 +8,61 @@
   <script src="/js/db-helper.js?v=1.1"></script>
   <!-- HTML5 QR Code Scanner Library from CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    /* Modern Scanner Reticle Overlay */
+    @keyframes verticalScan {
+      0% { top: 0%; opacity: 0.8; }
+      50% { top: 100%; opacity: 0.8; }
+      100% { top: 0%; opacity: 0.8; }
+    }
+    @keyframes cornerPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.03); filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.4)); }
+      100% { transform: scale(1); }
+    }
+    .scanner-viewport {
+      animation: cornerPulse 3s infinite ease-in-out;
+    }
+    .corner {
+      transition: border-color 0.3s ease, filter 0.3s ease;
+    }
+    .laser-line {
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    /* Dynamic visual status feedback on the reticle */
+    .scan-visualizer.success-flash .corner {
+      border-color: var(--color-success) !important;
+      filter: drop-shadow(0 0 8px var(--color-success)) !important;
+    }
+    .scan-visualizer.success-flash .laser-line {
+      background: linear-gradient(to right, transparent, var(--color-success), transparent) !important;
+      box-shadow: 0 0 8px var(--color-success) !important;
+    }
+    
+    .scan-visualizer.error-flash .corner {
+      border-color: var(--color-danger) !important;
+      filter: drop-shadow(0 0 8px var(--color-danger)) !important;
+    }
+    .scan-visualizer.error-flash .laser-line {
+      background: linear-gradient(to right, transparent, var(--color-danger), transparent) !important;
+      box-shadow: 0 0 8px var(--color-danger) !important;
+    }
+    
+    /* Clean html5-qrcode video viewport */
+    #cameraReader video {
+      object-fit: cover !important;
+      width: 100% !important;
+      height: 320px !important;
+    }
+    #cameraReader {
+      border: none !important;
+    }
+    /* Hide standard HTML5-QRCode components we don't want */
+    #cameraReader__header_message, #cameraReader__dashboard {
+      display: none !important;
+    }
+  </style>
 </head>
 <body class="dark-theme">
   <header class="app-header">
@@ -44,8 +99,23 @@
             </div>
             
             <!-- Integrated Camera Viewport -->
-            <div id="cameraReaderContainer" style="display: none; width: 100%; max-width: 420px; border-radius: 8px; overflow: hidden; background: #000; position: relative; border: 2px solid rgba(255,255,255,0.06); box-shadow: 0 4px 12px rgba(0,0,0,0.4);">
+            <div id="cameraReaderContainer" style="display: none; width: 100%; max-width: 420px; border-radius: 12px; overflow: hidden; background: #000; position: relative; border: 2px solid rgba(255,255,255,0.08); box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
               <div id="cameraReader" style="width: 100%;"></div>
+              
+              <!-- Modern Overlay Reticle -->
+              <div class="modern-scanner-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; align-items: center; justify-content: center; z-index: 12;">
+                <!-- Scanning Viewport Frame -->
+                <div class="scanner-viewport" style="width: 200px; height: 200px; position: relative; box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.6); border: 2px solid rgba(255, 255, 255, 0.1); border-radius: 12px;">
+                  <!-- Target Corners -->
+                  <div class="corner tl" style="position: absolute; top: -2px; left: -2px; width: 20px; height: 20px; border-top: 4px solid #38bdf8; border-left: 4px solid #38bdf8; border-top-left-radius: 6px;"></div>
+                  <div class="corner tr" style="position: absolute; top: -2px; right: -2px; width: 20px; height: 20px; border-top: 4px solid #38bdf8; border-right: 4px solid #38bdf8; border-top-right-radius: 6px;"></div>
+                  <div class="corner bl" style="position: absolute; bottom: -2px; left: -2px; width: 20px; height: 20px; border-bottom: 4px solid #38bdf8; border-left: 4px solid #38bdf8; border-bottom-left-radius: 6px;"></div>
+                  <div class="corner br" style="position: absolute; bottom: -2px; right: -2px; width: 20px; height: 20px; border-bottom: 4px solid #38bdf8; border-right: 4px solid #38bdf8; border-bottom-right-radius: 6px;"></div>
+                  
+                  <!-- Contain scanning laser inside target viewport -->
+                  <div class="laser-line" style="position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(to right, transparent, #38bdf8, transparent); box-shadow: 0 0 8px #38bdf8; animation: verticalScan 2s infinite ease-in-out;"></div>
+                </div>
+              </div>
             </div>
           </div>
           
