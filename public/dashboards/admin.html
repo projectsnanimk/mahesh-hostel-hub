@@ -6,6 +6,7 @@
   <title>MAHESH HOSTELS STAFF PORTAL - Admin Dashboard</title>
   <link rel="stylesheet" href="/css/styles.css">
   <script src="/js/db-helper.js?v=1.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     /* Premium Dashboard Overrides */
     .brand {
@@ -481,10 +482,52 @@
          TAB 2: KITCHEN & INVENTORY
          ---------------------------------------------------------------------- -->
     <div id="tab-kitchen" class="tab-content">
+      
+      <!-- Time-Aware State Machine Banner -->
+      <div class="timeline-banner">
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <div style="font-size: 2rem;">🕒</div>
+          <div>
+            <div id="kitchenClockTime" style="font-size: 1.25rem; font-weight: 800; color: white; font-family: monospace;">12:00:00 PM</div>
+            <div style="font-size: 0.75rem; color: #a78bfa; font-weight: 600; text-transform: uppercase; margin-top: 2px;">Asia/Kolkata timezone (IST)</div>
+          </div>
+        </div>
+        
+        <div style="text-align: center; border-left: 1px solid rgba(255,255,255,0.08); border-right: 1px solid rgba(255,255,255,0.08); padding: 0 25px;">
+          <div style="font-size: 0.75rem; color: var(--text-staff-secondary); font-weight: 600; text-transform: uppercase;">Current Reconciliation State</div>
+          <div id="kitchenReconciliationState" style="font-size: 1.05rem; font-weight: 700; color: #2ed573; margin-top: 4px; display: flex; align-items: center; gap: 6px; justify-content: center;">
+            <span id="kitchenReconciliationDot" style="width: 8px; height: 8px; border-radius: 50%; background: #2ed573; display: inline-block;"></span> Normal Operations
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+          <label for="simulationSelect" style="font-size: 0.7rem; color: var(--text-staff-secondary); font-weight: 600; text-transform: uppercase;">Simulation Testing Engine</label>
+          <select id="simulationSelect" onchange="toggleSimulation(this.value)" class="form-input" style="width: 220px; font-size: 0.8rem; padding: 5px 10px; background: #0f172a; border-color: rgba(255,255,255,0.1); height: auto;">
+            <option value="real">⚡ Real Time (System Clock)</option>
+            <option value="6">🌅 06:00 AM (Rollover Trigger)</option>
+            <option value="19.25">🔒 07:15 PM (Operations Lock)</option>
+            <option value="19.75">📋 07:45 PM (Compliance Deadline)</option>
+            <option value="20">🚨 08:00 PM (Emergency Market Run)</option>
+            <option value="20.5">🛒 08:30 PM (Inward Refill)</option>
+            <option value="21">💾 09:00 PM (Archiving & Lock)</option>
+          </select>
+        </div>
+      </div>
+
       <div class="card" style="margin-bottom: 40px;">
-        <div class="table-actions">
-          <h3 class="card-title">Central Kitchen Ingredients Stock</h3>
-          <span style="font-size:0.8rem; color:var(--text-staff-secondary);">*Ingredients trigger warning highlights when falling below safety thresholds</span>
+        <div class="table-actions" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 15px; flex-wrap: wrap;">
+          <div>
+            <h3 class="card-title" style="margin-bottom: 4px;">Central Kitchen Ingredients Stock</h3>
+            <span style="font-size:0.8rem; color:var(--text-staff-secondary);">*Daily stock rollover occurs at 6:00 AM. Database closes and archives to cloud at 9:00 PM.</span>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn-submit" onclick="downloadPreMarketReport()" style="background: linear-gradient(135deg, #10b981, #059669); margin: 0; padding: 10px 16px; font-size: 0.82rem; height: auto;">
+              📥 Download Pre-Market Report
+            </button>
+            <button class="btn-submit" onclick="openEmergencyMarketModal()" id="btnEmergencyList" style="background: linear-gradient(135deg, #e11d48, #be123c); margin: 0; padding: 10px 16px; font-size: 0.82rem; height: auto; position: relative;">
+              🛒 Emergency Market Run List (8:00 PM)
+            </button>
+          </div>
         </div>
         <div class="asset-table-wrapper">
           <table class="asset-table">
@@ -492,15 +535,18 @@
               <tr>
                 <th>Ingredient</th>
                 <th>Safety Buffer Gauge</th>
-                <th>Available Capacity (KG)</th>
-                <th>Threshold Level (KG)</th>
+                <th>Opening Stock</th>
+                <th>Today Inward (+)</th>
+                <th>Today Issued (-)</th>
+                <th>Available Stock</th>
+                <th>Min Threshold</th>
                 <th>Alert Status</th>
                 <th>Adjustment</th>
               </tr>
             </thead>
             <tbody id="inventoryTableBody">
               <tr>
-                <td colspan="6" style="text-align: center; color: var(--text-staff-secondary); padding: 40px 0;">
+                <td colspan="9" style="text-align: center; color: var(--text-staff-secondary); padding: 40px 0;">
                   Retrieving inventory metrics...
                 </td>
               </tr>
@@ -702,19 +748,73 @@
 
   </main>
 
-  <!-- Edit Stock Modal -->
-  <div class="modal" id="editStockModal">
-    <div class="modal-content">
-      <span class="modal-close" onclick="closeEditStockModal()">×</span>
-      <h2 class="login-title" id="editStockTitle">Refill Ingredient</h2>
-      <form id="editStockForm">
-        <input type="hidden" id="editStockIngredientName">
-        <div class="form-group">
-          <label class="form-label" for="editStockQty">Current Quantity (KG)</label>
-          <input class="form-input" type="number" step="0.01" id="editStockQty" required>
+  <!-- Adjust Stock Modal -->
+  <div class="modal" id="adjustStockModal">
+    <div class="modal-content" style="max-width: 480px;">
+      <span class="modal-close" onclick="closeAdjustStockModal()">×</span>
+      <h2 class="login-title" id="adjustStockTitle" style="color: #a78bfa;">Adjust Stock</h2>
+      
+      <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 0.85rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: var(--text-staff-secondary);">Opening Stock:</span>
+          <span id="adjOpeningVal" style="color: white; font-weight: 700;">-</span>
         </div>
-        <button class="btn-submit" type="submit" style="background:#7c3aed;">Execute Stock Write</button>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: var(--text-staff-secondary);">Today Inward (+):</span>
+          <span id="adjInwardVal" style="color: #2ed573; font-weight: 700;">-</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: var(--text-staff-secondary);">Today Issued (-):</span>
+          <span id="adjIssuedVal" style="color: #ffa502; font-weight: 700;">-</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 6px; font-weight: 800;">
+          <span style="color: white;">Current Available:</span>
+          <span id="adjAvailableVal" style="color: #38bdf8;">-</span>
+        </div>
+      </div>
+
+      <form id="adjustStockForm">
+        <input type="hidden" id="adjustStockIngredientName">
+        
+        <div class="form-group" style="margin-bottom: 15px;">
+          <label class="form-label" for="adjustInwardAdd" style="color: #2ed573;">📥 Add Today Inward Stock (+)</label>
+          <input class="form-input" type="number" step="0.01" id="adjustInwardAdd" placeholder="e.g. 50.0" value="0">
+          <small style="color: var(--text-staff-secondary); font-size: 0.72rem; margin-top: 4px; display: block;">This will add to Today's Inward sum.</small>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label class="form-label" for="adjustIssuedSet" style="color: #ffa502;">📤 Set Today Issued Stock (Out)</label>
+          <input class="form-input" type="number" step="0.01" id="adjustIssuedSet" placeholder="e.g. 45.0">
+          <small style="color: var(--text-staff-secondary); font-size: 0.72rem; margin-top: 4px; display: block;">This sets the total weight issued today.</small>
+        </div>
+
+        <button class="btn-submit" type="submit" style="background:#7c3aed;">Save Stock Adjustments</button>
       </form>
+    </div>
+  </div>
+
+  <!-- Emergency Market Shopping List Modal -->
+  <div class="modal" id="emergencyMarketModal">
+    <div class="modal-content" style="max-width: 480px; padding: 25px; border: 1px solid #e11d48; border-top: 4px solid #e11d48;">
+      <span class="modal-close" onclick="closeEmergencyMarketModal()">×</span>
+      
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span style="font-size: 2.2rem;">🛒</span>
+        <h2 style="color: #f43f5e; font-size: 1.35rem; margin-top: 10px; font-weight: 800;">Emergency Market Run List</h2>
+        <p style="font-size: 0.8rem; color: var(--text-staff-secondary); margin-top: 4px;">
+          Required purchases for items breaching critical safety levels
+        </p>
+      </div>
+
+      <div id="emergencyListContainer" style="max-height: 380px; overflow-y: auto; margin-bottom: 20px; padding-right: 5px;">
+        <!-- Dynamic items list -->
+      </div>
+
+      <div style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.2); padding: 12px; border-radius: 8px; text-align: center; font-size: 0.78rem; color: #fda4af;">
+        ⚠️ <strong>Operational Constraint:</strong> Vendors close at 10:00 PM. Grocery dispatch team must return before 08:55 PM for Inward Refurbishment logging.
+      </div>
+      
+      <button class="btn-submit" onclick="closeEmergencyMarketModal()" style="background: #334155; margin-top: 15px;">Close Shopping List</button>
     </div>
   </div>
 
@@ -1344,11 +1444,156 @@
     // ----------------------------------------------------
     // KITCHEN MODULE
     // ----------------------------------------------------
+    // ----------------------------------------------------
+    // KITCHEN MODULE
+    // ----------------------------------------------------
+    let currentSimMode = 'real';
+    window.kitchenReconSettings = { isLocked: false, enableRefill: true, timeInMinutes: 720, stateText: 'Normal Operations' };
+
+    function getAsiaKolkataTime() {
+      const now = new Date();
+      const kolkataTimeStr = now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+      return new Date(kolkataTimeStr);
+    }
+
+    function getReconciliationTime() {
+      const kolkataNow = getAsiaKolkataTime();
+      if (currentSimMode === 'real') {
+        return {
+          date: kolkataNow,
+          hours: kolkataNow.getHours(),
+          minutes: kolkataNow.getMinutes(),
+          seconds: kolkataNow.getSeconds()
+        };
+      }
+      
+      const totalHours = parseFloat(currentSimMode);
+      const simulatedHrs = Math.floor(totalHours);
+      const simulatedMins = Math.floor((totalHours - simulatedHrs) * 60);
+      return {
+        date: kolkataNow,
+        hours: simulatedHrs,
+        minutes: simulatedMins,
+        seconds: 0
+      };
+    }
+
+    function updateReconciliationClock() {
+      const timeInfo = getReconciliationTime();
+      
+      const hrs12 = timeInfo.hours % 12 || 12;
+      const ampm = timeInfo.hours >= 12 ? 'PM' : 'AM';
+      const timeStr = `${String(hrs12).padStart(2, '0')}:${String(timeInfo.minutes).padStart(2, '0')}:${String(timeInfo.seconds).padStart(2, '0')} ${ampm}`;
+      
+      const clockEl = document.getElementById('kitchenClockTime');
+      if (clockEl) {
+        clockEl.innerText = timeStr + (currentSimMode !== 'real' ? ' (SIMULATED)' : '');
+        clockEl.style.color = currentSimMode !== 'real' ? '#fbbf24' : 'white';
+      }
+
+      const timeInMinutes = timeInfo.hours * 60 + timeInfo.minutes;
+      let stateText = 'Normal Operations';
+      let badgeClass = 'badge-healthy';
+      let dotColor = '#2ed573';
+      let isLocked = false;
+      let enableRefill = true;
+
+      // Enforce Daily Rollover check automatically
+      const todayStr = timeInfo.date.toLocaleDateString('en-CA');
+      const ranRollover = HostelHubDB.checkDailyRollover(timeInfo.hours, todayStr);
+      if (ranRollover) {
+        showToast('🌅 Daily 06:00 AM Rollover executed: opening stocks synchronized!', 'info');
+      }
+
+      if (timeInMinutes < 360) {
+        stateText = '🔒 Immutable Night Lock';
+        badgeClass = 'badge-critical';
+        dotColor = '#ff4757';
+        isLocked = true;
+        enableRefill = false;
+      } else if (timeInMinutes >= 360 && timeInMinutes < 1155) {
+        stateText = '🌞 Normal Cooking Operations';
+        badgeClass = 'badge-healthy';
+        dotColor = '#2ed573';
+      } else if (timeInMinutes >= 1155 && timeInMinutes < 1170) {
+        stateText = '🔒 Operations Lock';
+        badgeClass = 'badge-warning';
+        dotColor = '#ffa502';
+        enableRefill = false;
+      } else if (timeInMinutes >= 1170 && timeInMinutes < 1185) {
+        stateText = '📋 Compliance Checkpoint';
+        badgeClass = 'badge-warning';
+        dotColor = '#ffa502';
+      } else if (timeInMinutes >= 1185 && timeInMinutes < 1200) {
+        stateText = '⏳ Preparing Restock Report';
+        badgeClass = 'badge-warning';
+        dotColor = '#ffa502';
+      } else if (timeInMinutes >= 1200 && timeInMinutes < 1215) {
+        stateText = '🚨 Emergency Run Alert';
+        badgeClass = 'badge-critical';
+        dotColor = '#ff4757';
+      } else if (timeInMinutes >= 1215 && timeInMinutes < 1255) {
+        stateText = '🛒 Inward Refurbishment';
+        badgeClass = 'badge-healthy';
+        dotColor = '#2ed573';
+      } else if (timeInMinutes >= 1255 && timeInMinutes < 1260) {
+        stateText = '⏳ Pre-Archive Lock';
+        badgeClass = 'badge-warning';
+        dotColor = '#ffa502';
+        enableRefill = false;
+      } else if (timeInMinutes >= 1260) {
+        stateText = '🔒 Immutable Night Lock';
+        badgeClass = 'badge-critical';
+        dotColor = '#ff4757';
+        isLocked = true;
+        enableRefill = false;
+      }
+
+      const stateEl = document.getElementById('kitchenReconciliationState');
+      if (stateEl) {
+        stateEl.innerHTML = `<span id="kitchenReconciliationDot" style="width: 8px; height: 8px; border-radius: 50%; background: ${dotColor}; display: inline-block; box-shadow: 0 0 6px ${dotColor};"></span> ${stateText}`;
+        stateEl.style.color = dotColor;
+      }
+
+      const btnEmergency = document.getElementById('btnEmergencyList');
+      if (btnEmergency) {
+        if (timeInMinutes >= 1200 && timeInMinutes < 1260) {
+          btnEmergency.style.boxShadow = '0 0 12px #ff4757';
+          btnEmergency.style.border = '1px solid #ff4757';
+        } else {
+          btnEmergency.style.boxShadow = 'none';
+          btnEmergency.style.border = 'none';
+        }
+      }
+
+      window.kitchenReconSettings = {
+        isLocked,
+        enableRefill,
+        timeInMinutes,
+        stateText
+      };
+    }
+
+    // Ticker event
+    setInterval(() => {
+      const tabKit = document.getElementById('tab-kitchen');
+      if (currentSimMode === 'real' && tabKit && tabKit.classList.contains('active')) {
+        updateReconciliationClock();
+      }
+    }, 1000);
+
+    function toggleSimulation(mode) {
+      currentSimMode = mode;
+      updateReconciliationClock();
+      loadKitchenMetrics();
+    }
+    window.toggleSimulation = toggleSimulation;
+
     function loadKitchenMetrics() {
       try {
+        updateReconciliationClock();
         const result = HostelHubDB.getKitchenMetrics();
         
-        // Render headcounts
         const { active_meal_window, headcount, inventory } = result;
         
         const labelText = active_meal_window ? `${active_meal_window} WINDOW` : 'MESS CLOSED';
@@ -1358,7 +1603,6 @@
         document.getElementById('metricsM2').innerText = headcount.M2;
         document.getElementById('metricsM3').innerText = headcount.M3;
 
-        // Render visual progress bars
         const pctM1 = Math.min((headcount.M1 / 120) * 100, 100).toFixed(0);
         const pctM2 = Math.min((headcount.M2 / 120) * 100, 100).toFixed(0);
         const pctM3 = Math.min((headcount.M3 / 120) * 100, 100).toFixed(0);
@@ -1367,7 +1611,6 @@
         document.getElementById('barM2').style.width = `${pctM2}%`;
         document.getElementById('barM3').style.width = `${pctM3}%`;
 
-        // Update dot pulse color
         const pulse = document.getElementById('livePulse');
         if (active_meal_window) {
           pulse.style.backgroundColor = 'var(--color-success)';
@@ -1390,26 +1633,44 @@
 
       items.forEach(item => {
         const row = document.createElement('tr');
-        const statusText = item.low_stock_alert ? '<span class="stock-alert-tag">LOW STOCK ALERT</span>' : '<span style="color:var(--color-success); font-weight:600;">HEALTHY</span>';
         
-        // Dynamically compute safety progress percentage
-        const maxCapacity = Math.max(item.stock_quantity_kg * 1.5, 500);
-        const pct = Math.min((item.stock_quantity_kg / maxCapacity) * 100, 100).toFixed(0);
+        let barColor = 'var(--color-success)';
+        let alertBadge = '<span class="badge-status badge-healthy">HEALTHY</span>';
         
+        if (item.alert_status === 'CRITICAL') {
+          row.className = 'row-critical';
+          barColor = '#ff4757';
+          alertBadge = '<span class="badge-status badge-critical">CRITICAL</span>';
+        } else if (item.alert_status === 'WARNING') {
+          row.className = 'row-warning';
+          barColor = '#ffa502';
+          alertBadge = '<span class="badge-status badge-warning">WARNING</span>';
+        } else {
+          row.className = 'row-healthy';
+        }
+        
+        let availableColor = '#cbd5e1';
+        if (item.alert_status === 'CRITICAL') availableColor = '#ff4757';
+        else if (item.alert_status === 'WARNING') availableColor = '#ffa502';
+        else if (item.alert_status === 'HEALTHY') availableColor = '#2ed573';
+
         row.innerHTML = `
           <td><strong>${item.ingredient_name}</strong></td>
           <td>
-            <div class="stock-bar-container">
-              <div class="stock-bar-fill ${item.low_stock_alert ? 'low' : 'normal'}" style="width: ${pct}%;"></div>
+            <div class="stock-bar-container" style="background: rgba(255,255,255,0.05); height: 8px; border-radius: 4px; overflow: hidden; display: flex; align-items: center; width: 100px; margin-bottom: 4px;">
+              <div class="stock-bar-fill" style="width: ${item.safety_percentage}%; height: 100%; background: ${barColor};"></div>
             </div>
-            <span style="font-size:0.8rem; font-weight:600;">${pct}%</span>
+            <span style="font-size:0.75rem; font-weight:600; color: #94a3b8;">${item.safety_percentage}%</span>
           </td>
-          <td>${item.stock_quantity_kg} KG</td>
-          <td>${item.alert_threshold_kg} KG</td>
-          <td>${statusText}</td>
+          <td>${item.opening_stock.toFixed(2)} KG</td>
+          <td style="color: #2ed573; font-weight: 600;">+${item.today_inward.toFixed(2)}</td>
+          <td style="color: #ffa502; font-weight: 600;">-${item.today_issued.toFixed(2)}</td>
+          <td style="color: ${availableColor}; font-weight: 700; font-size: 0.95rem;">${item.stock_quantity_kg.toFixed(2)} KG</td>
+          <td style="color: #94a3b8;">${item.minimum_threshold.toFixed(2)} KG</td>
+          <td>${alertBadge}</td>
           <td>
-            <button class="btn-action edit" onclick="openEditStockModal('${item.ingredient_name}', ${item.stock_quantity_kg})">
-              Refill
+            <button class="btn-action edit" onclick="openAdjustStockModal('${item.ingredient_name}', ${item.opening_stock}, ${item.today_inward}, ${item.today_issued}, ${item.stock_quantity_kg})" style="background: rgba(124, 58, 237, 0.15); color: #c084fc; border: 1px solid rgba(124, 58, 237, 0.3);">
+              Adjust
             </button>
           </td>
         `;
@@ -1417,36 +1678,172 @@
       });
     }
 
-    function openEditStockModal(name, qty) {
-      document.getElementById('editStockIngredientName').value = name;
-      document.getElementById('editStockTitle').innerText = `Refill Ingredient: ${name}`;
-      document.getElementById('editStockQty').value = qty;
-      document.getElementById('editStockModal').classList.add('show');
+    function openAdjustStockModal(name, opening, inward, issued, available) {
+      const settings = window.kitchenReconSettings || {};
+      if (settings.isLocked) {
+        showToast(`Cannot adjust stock: ${settings.stateText} is active.`, 'error');
+        return;
+      }
+
+      document.getElementById('adjustStockIngredientName').value = name;
+      document.getElementById('adjustStockTitle').innerText = `Adjust Stock: ${name}`;
+      
+      document.getElementById('adjOpeningVal').innerText = `${opening.toFixed(2)} KG`;
+      document.getElementById('adjInwardVal').innerText = `+${inward.toFixed(2)} KG`;
+      document.getElementById('adjIssuedVal').innerText = `-${issued.toFixed(2)} KG`;
+      
+      let availableColor = '#2ed573';
+      if (available <= 0) availableColor = '#ff4757';
+      document.getElementById('adjAvailableVal').innerText = `${available.toFixed(2)} KG`;
+      document.getElementById('adjAvailableVal').style.color = availableColor;
+
+      document.getElementById('adjustInwardAdd').value = '0';
+      document.getElementById('adjustIssuedSet').value = issued.toFixed(2);
+      
+      const inwardInput = document.getElementById('adjustInwardAdd');
+      
+      if (!settings.enableRefill) {
+        inwardInput.disabled = true;
+        inwardInput.placeholder = "Refill locked in this state";
+      } else {
+        inwardInput.disabled = false;
+        inwardInput.placeholder = "e.g. 50.0";
+      }
+
+      document.getElementById('adjustStockModal').classList.add('show');
     }
 
-    function closeEditStockModal() {
-      document.getElementById('editStockModal').classList.remove('show');
+    function closeAdjustStockModal() {
+      document.getElementById('adjustStockModal').classList.remove('show');
     }
 
-    // Submit Refill
-    document.getElementById('editStockForm').addEventListener('submit', (e) => {
+    document.getElementById('adjustStockForm').addEventListener('submit', (e) => {
       e.preventDefault();
-      const ingredient_name = document.getElementById('editStockIngredientName').value;
-      const stock_quantity_kg = parseFloat(document.getElementById('editStockQty').value);
+      
+      const ingredient_name = document.getElementById('adjustStockIngredientName').value;
+      const inward_add = parseFloat(document.getElementById('adjustInwardAdd').value) || 0;
+      const issued_val_str = document.getElementById('adjustIssuedSet').value;
+      const issued_set = issued_val_str !== '' ? parseFloat(issued_val_str) : null;
 
       try {
-        const result = HostelHubDB.updateKitchenStock(ingredient_name, stock_quantity_kg);
+        const result = HostelHubDB.adjustKitchenAsset(ingredient_name, inward_add, issued_set);
         if (result) {
-          showToast(`Central kitchen stock updated for ${ingredient_name}.`, 'success');
-          closeEditStockModal();
+          showToast(`Reconciliation logged for ${ingredient_name}.`, 'success');
+          closeAdjustStockModal();
           loadKitchenMetrics();
         } else {
-          showToast('Error updating stock', 'error');
+          showToast('Error saving stock adjustment.', 'error');
         }
       } catch (err) {
-        showToast('Local database error saving stock logs.', 'error');
+        showToast('Local database write operation failed.', 'error');
+        console.error(err);
       }
     });
+
+    function openEmergencyMarketModal() {
+      const result = HostelHubDB.getKitchenMetrics();
+      const { inventory } = result;
+      
+      const criticalItems = inventory.filter(item => item.alert_status === 'CRITICAL');
+      
+      const container = document.getElementById('emergencyListContainer');
+      container.innerHTML = '';
+      
+      if (criticalItems.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; color: var(--text-staff-secondary); padding: 30px 0; font-size: 0.9rem;">
+            ✅ All stocks are healthy! No items have breached safety thresholds.
+          </div>
+        `;
+      } else {
+        criticalItems.forEach(item => {
+          const targetBuy = (item.minimum_threshold * 3) - item.stock_quantity_kg;
+          const buyLabel = targetBuy.toFixed(2);
+          
+          const div = document.createElement('div');
+          div.style.background = 'rgba(255,255,255,0.02)';
+          div.style.border = '1px solid rgba(255, 71, 87, 0.15)';
+          div.style.padding = '12px 15px';
+          div.style.borderRadius = '8px';
+          div.style.marginBottom = '10px';
+          div.style.display = 'flex';
+          div.style.alignItems = 'center';
+          div.style.justifyContent = 'space-between';
+          div.style.gap = '15px';
+          
+          div.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+              <input type="checkbox" id="chk_${item.ingredient_name.replace(/\s+/g, '_')}" style="width: 18px; height: 18px; cursor: pointer; accent-color: #f43f5e;">
+              <label for="chk_${item.ingredient_name.replace(/\s+/g, '_')}" style="font-weight: 700; color: white; cursor: pointer; font-size: 0.95rem;">
+                ${item.ingredient_name}
+              </label>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 0.7rem; color: #fda4af; font-weight: 600; text-transform: uppercase;">Target Buy</div>
+              <div style="font-size: 1.15rem; font-weight: 800; color: #ff4757;">${buyLabel} KG</div>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      }
+
+      document.getElementById('emergencyMarketModal').classList.add('show');
+    }
+
+    function closeEmergencyMarketModal() {
+      document.getElementById('emergencyMarketModal').classList.remove('show');
+    }
+
+    function downloadPreMarketReport() {
+      try {
+        const result = HostelHubDB.getKitchenMetrics();
+        const { inventory } = result;
+
+        const timeInfo = getReconciliationTime();
+        const timestampStr = timeInfo.date.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+        
+        const wb = XLSX.utils.book_new();
+        
+        const banner = [
+          ["Operational Checkpoint: Pre-Market Review Summary | Generated at: " + timestampStr],
+          []
+        ];
+        
+        const ws = XLSX.utils.aoa_to_sheet(banner);
+        
+        const dataRows = inventory.map(item => ({
+          "Ingredient Name": item.ingredient_name,
+          "Safety Gauge (%)": item.safety_percentage,
+          "Opening Stock (KG/Ltr)": item.opening_stock,
+          "Today Inward (+)": item.today_inward,
+          "Today Issued (-)": item.today_issued,
+          "Available Stock (KG/Ltr)": item.stock_quantity_kg,
+          "Min Threshold (KG/Ltr)": item.minimum_threshold,
+          "Alert Status": item.alert_status
+        }));
+        
+        XLSX.utils.sheet_add_json(ws, dataRows, { origin: "A3" });
+        
+        XLSX.utils.book_append_sheet(wb, ws, "Daily Stock Report");
+        
+        const todayStr = timeInfo.date.toLocaleDateString('en-CA');
+        const hourStr = String(timeInfo.hours).padStart(2, '0');
+        const minStr = String(timeInfo.minutes).padStart(2, '0');
+        const fileName = `Daily_Stock_Report_${todayStr}_${hourStr}-${minStr}.xlsx`;
+        
+        XLSX.writeFile(wb, fileName);
+        showToast(`Report downloaded: ${fileName}`, 'success');
+      } catch (err) {
+        showToast('Error exporting Excel report.', 'error');
+        console.error(err);
+      }
+    }
+
+    window.openAdjustStockModal = openAdjustStockModal;
+    window.closeAdjustStockModal = closeAdjustStockModal;
+    window.openEmergencyMarketModal = openEmergencyMarketModal;
+    window.closeEmergencyMarketModal = closeEmergencyMarketModal;
+    window.downloadPreMarketReport = downloadPreMarketReport;
 
     // ----------------------------------------------------
     // STUDENTS CRUD MODULE

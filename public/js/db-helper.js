@@ -10,14 +10,14 @@ const DEFAULT_HOSTELS = [
 ];
 
 const DEFAULT_ASSETS = [
-  { asset_id: 1, ingredient_name: 'Rice', stock_quantity_kg: 500.00, alert_threshold_kg: 100.00 },
-  { asset_id: 2, ingredient_name: 'Wheat Flour', stock_quantity_kg: 400.00, alert_threshold_kg: 80.00 },
-  { asset_id: 3, ingredient_name: 'Dal (Lentils)', stock_quantity_kg: 250.00, alert_threshold_kg: 50.00 },
-  { asset_id: 4, ingredient_name: 'Cooking Oil', stock_quantity_kg: 150.00, alert_threshold_kg: 30.00 },
-  { asset_id: 5, ingredient_name: 'Vegetables (Mixed)', stock_quantity_kg: 100.00, alert_threshold_kg: 40.00 },
-  { asset_id: 6, ingredient_name: 'Milk', stock_quantity_kg: 120.00, alert_threshold_kg: 25.00 },
-  { asset_id: 7, ingredient_name: 'Sugar', stock_quantity_kg: 80.00, alert_threshold_kg: 20.00 },
-  { asset_id: 8, ingredient_name: 'Salt', stock_quantity_kg: 50.00, alert_threshold_kg: 10.00 }
+  { asset_id: 1, ingredient_name: 'Rice', opening_stock: 500.00, today_inward: 0.00, today_issued: 0.00, minimum_threshold: 100.00, total_capacity: 1000.00, stock_quantity_kg: 500.00, alert_threshold_kg: 100.00 },
+  { asset_id: 2, ingredient_name: 'Wheat Flour', opening_stock: 400.00, today_inward: 0.00, today_issued: 0.00, minimum_threshold: 80.00, total_capacity: 800.00, stock_quantity_kg: 400.00, alert_threshold_kg: 80.00 },
+  { asset_id: 3, ingredient_name: 'Dal (Lentils)', opening_stock: 250.00, today_inward: 0.00, today_issued: 0.00, minimum_threshold: 50.00, total_capacity: 500.00, stock_quantity_kg: 250.00, alert_threshold_kg: 50.00 },
+  { asset_id: 4, ingredient_name: 'Cooking Oil', opening_stock: 150.00, today_inward: 0.00, today_issued: 0.00, minimum_threshold: 30.00, total_capacity: 300.00, stock_quantity_kg: 150.00, alert_threshold_kg: 30.00 },
+  { asset_id: 5, ingredient_name: 'Vegetables (Mixed)', opening_stock: 100.00, today_inward: 0.00, today_issued: 0.00, minimum_threshold: 40.00, total_capacity: 250.00, stock_quantity_kg: 100.00, alert_threshold_kg: 40.00 },
+  { asset_id: 6, ingredient_name: 'Milk', opening_stock: 120.00, today_inward: 0.00, today_issued: 0.00, minimum_threshold: 25.00, total_capacity: 200.00, stock_quantity_kg: 120.00, alert_threshold_kg: 25.00 },
+  { asset_id: 7, ingredient_name: 'Sugar', opening_stock: 80.00, today_inward: 0.00, today_issued: 0.00, minimum_threshold: 20.00, total_capacity: 150.00, stock_quantity_kg: 80.00, alert_threshold_kg: 20.00 },
+  { asset_id: 8, ingredient_name: 'Salt', opening_stock: 50.00, today_inward: 0.00, today_issued: 0.00, minimum_threshold: 10.00, total_capacity: 100.00, stock_quantity_kg: 50.00, alert_threshold_kg: 10.00 }
 ];
 
 const DEFAULT_STAFF = [
@@ -123,7 +123,22 @@ function initStorageDb() {
   
   let changed = false;
   if (!db.hostels) { db.hostels = DEFAULT_HOSTELS; changed = true; }
-  if (!db.central_kitchen_assets) { db.central_kitchen_assets = DEFAULT_ASSETS; changed = true; }
+  if (!db.central_kitchen_assets) { 
+    db.central_kitchen_assets = DEFAULT_ASSETS; 
+    changed = true; 
+  } else {
+    // Migrate existing assets to the new schema
+    db.central_kitchen_assets.forEach(asset => {
+      if (asset.opening_stock === undefined) {
+        asset.opening_stock = parseFloat(asset.stock_quantity_kg) || 0;
+        asset.today_inward = 0.00;
+        asset.today_issued = 0.00;
+        asset.minimum_threshold = parseFloat(asset.alert_threshold_kg) || 0;
+        asset.total_capacity = parseFloat(asset.alert_threshold_kg) * 10 || 500;
+        changed = true;
+      }
+    });
+  }
   if (!db.staff_users) { db.staff_users = DEFAULT_STAFF; changed = true; }
   if (!db.students || (db.students.length > 0 && !db.students[0].parent_name)) { db.students = DEFAULT_STUDENTS; changed = true; }
   if (!db.mess_attendance_logs) { db.mess_attendance_logs = []; changed = true; }
@@ -453,15 +468,36 @@ const db = {
       }
     });
 
-    // Check inventory stock warning buffers
+    // Check inventory stock warning reconciliation buffers
     const assetsWithAlerts = dbState.central_kitchen_assets.map(asset => {
-      const stock = parseFloat(asset.stock_quantity_kg);
-      const threshold = parseFloat(asset.alert_threshold_kg);
+      const opening = parseFloat(asset.opening_stock) || 0;
+      const inward = parseFloat(asset.today_inward) || 0;
+      const issued = parseFloat(asset.today_issued) || 0;
+      const available = opening + inward - issued;
+      const threshold = parseFloat(asset.minimum_threshold) || parseFloat(asset.alert_threshold_kg) || 0;
+      const capacity = parseFloat(asset.total_capacity) || (threshold * 10) || 500;
+      
+      const safetyPct = Math.min(Math.round((available / capacity) * 100), 100);
+
+      let status = 'HEALTHY';
+      if (available <= threshold) {
+        status = 'CRITICAL';
+      } else if (available <= threshold * 1.15) {
+        status = 'WARNING';
+      }
+
       return {
         ...asset,
-        stock_quantity_kg: stock,
+        opening_stock: opening,
+        today_inward: inward,
+        today_issued: issued,
+        stock_quantity_kg: available,
         alert_threshold_kg: threshold,
-        low_stock_alert: stock < threshold
+        minimum_threshold: threshold,
+        total_capacity: capacity,
+        safety_percentage: safetyPct,
+        alert_status: status,
+        low_stock_alert: status === 'CRITICAL'
       };
     });
 
@@ -473,10 +509,62 @@ const db = {
     };
   },
 
+  checkDailyRollover: (simulatedHour = null, simulatedDateStr = null) => {
+    const dbState = getDb();
+    const todayStr = simulatedDateStr || new Date().toLocaleDateString('en-CA');
+    
+    if (dbState.last_rollover_date === todayStr) {
+      return false;
+    }
+
+    const hour = simulatedHour !== null ? simulatedHour : new Date().getHours();
+    if (hour < 6) {
+      return false;
+    }
+
+    dbState.central_kitchen_assets.forEach(asset => {
+      const opening = parseFloat(asset.opening_stock) || 0;
+      const inward = parseFloat(asset.today_inward) || 0;
+      const issued = parseFloat(asset.today_issued) || 0;
+      const available = opening + inward - issued;
+
+      asset.opening_stock = available;
+      asset.today_inward = 0.00;
+      asset.today_issued = 0.00;
+      asset.stock_quantity_kg = available;
+    });
+
+    dbState.last_rollover_date = todayStr;
+    saveDb(dbState);
+    return true;
+  },
+
+  adjustKitchenAsset: (ingredientName, inwardAdd, issuedSet) => {
+    const dbState = getDb();
+    const asset = dbState.central_kitchen_assets.find(a => a.ingredient_name.toLowerCase() === ingredientName.toLowerCase());
+    if (asset) {
+      if (inwardAdd !== undefined && inwardAdd !== null) {
+        asset.today_inward = (parseFloat(asset.today_inward) || 0) + parseFloat(inwardAdd);
+      }
+      if (issuedSet !== undefined && issuedSet !== null) {
+        asset.today_issued = parseFloat(issuedSet);
+      }
+      const available = (parseFloat(asset.opening_stock) || 0) + (parseFloat(asset.today_inward) || 0) - (parseFloat(asset.today_issued) || 0);
+      asset.stock_quantity_kg = available;
+      
+      saveDb(dbState);
+      return asset;
+    }
+    return null;
+  },
+
   updateKitchenStock: (ingredientName, quantityKg) => {
     const dbState = getDb();
     const asset = dbState.central_kitchen_assets.find(a => a.ingredient_name.toLowerCase() === ingredientName.toLowerCase());
     if (asset) {
+      asset.opening_stock = parseFloat(quantityKg);
+      asset.today_inward = 0.00;
+      asset.today_issued = 0.00;
       asset.stock_quantity_kg = parseFloat(quantityKg);
       saveDb(dbState);
       return asset;
@@ -501,6 +589,11 @@ const db = {
     const newAsset = {
       asset_id: dbState.central_kitchen_assets.length + 1,
       ingredient_name: ingredientName.trim(),
+      opening_stock: parseFloat(quantityKg) || 0.00,
+      today_inward: 0.00,
+      today_issued: 0.00,
+      minimum_threshold: parseFloat(alertThresholdKg) || 10.00,
+      total_capacity: (parseFloat(alertThresholdKg) || 10.00) * 10 || 500.00,
       stock_quantity_kg: parseFloat(quantityKg) || 0.00,
       alert_threshold_kg: parseFloat(alertThresholdKg) || 10.00
     };

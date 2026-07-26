@@ -1,0 +1,6 @@
+# Local env/dependencies
+node_modules/
+.env
+.env.*
+firebase-debug.log
+firestore-debug.log
