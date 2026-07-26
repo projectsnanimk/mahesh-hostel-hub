@@ -420,6 +420,47 @@
          TAB 4: SALARY HISTORY
          -------------------------------------------------- -->
     <div id="tab-salary" class="tab-content">
+      <!-- Monthly Attendance Calendar Card -->
+      <div class="card" style="margin-bottom: 30px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; flex-wrap:wrap; gap:10px;">
+          <h2 class="card-title" style="margin-bottom:0; border-left:3px solid #38bdf8; padding-left:10px;">🗓️ Monthly Attendance Calendar</h2>
+          <div>
+            <label for="calendarMonthSelect" style="font-size:0.85rem; color:var(--text-staff-secondary); margin-right:8px;">Select Month:</label>
+            <select id="calendarMonthSelect" onchange="renderCalendarForSelectedMonth()" style="background:#1e293b; color:#fff; border:1px solid var(--border-staff); border-radius:6px; padding:6px 12px; cursor:pointer;">
+              <!-- Option tags populated dynamically -->
+            </select>
+          </div>
+        </div>
+        
+        <!-- Stats Summary Badges -->
+        <div style="display:flex; gap:15px; margin-bottom:20px; flex-wrap:wrap;">
+          <div style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.2); padding:10px 15px; border-radius:8px; display:flex; align-items:center; gap:8px;">
+            <span style="display:inline-block; width:10px; height:10px; background:#10b981; border-radius:50%;"></span>
+            <span style="color:var(--text-staff-secondary); font-size:0.85rem;">Present: <strong id="calPresentCount" style="color:#10b981;">0</strong> Days</span>
+          </div>
+          <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); padding:10px 15px; border-radius:8px; display:flex; align-items:center; gap:8px;">
+            <span style="display:inline-block; width:10px; height:10px; background:#ef4444; border-radius:50%;"></span>
+            <span style="color:var(--text-staff-secondary); font-size:0.85rem;">Absent: <strong id="calAbsentCount" style="color:#ef4444;">0</strong> Days</span>
+          </div>
+          <div style="background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.2); padding:10px 15px; border-radius:8px; display:flex; align-items:center; gap:8px;">
+            <span style="display:inline-block; width:10px; height:10px; background:#38bdf8; border-radius:50%;"></span>
+            <span style="color:var(--text-staff-secondary); font-size:0.85rem;">Allowed Leaves: <strong id="calLeaveCount" style="color:#38bdf8;">0</strong> Days</span>
+          </div>
+        </div>
+
+        <!-- Calendar Grid -->
+        <div style="max-width: 420px; margin: 0 auto; background: rgba(0,0,0,0.15); border: 1px solid var(--border-staff); border-radius: 12px; padding: 20px;">
+          <!-- Days of Week Header -->
+          <div style="display:grid; grid-template-columns: repeat(7, 1fr); text-align:center; font-weight:700; font-size:0.75rem; color:var(--text-staff-secondary); margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:8px;">
+            <div>SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div>
+          </div>
+          <!-- Days Grid -->
+          <div id="calendarDaysGrid" style="display:grid; grid-template-columns: repeat(7, 1fr); gap:10px; text-align:center;">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </div>
+
       <div class="card">
         <h2 class="card-title" style="border-left:3px solid var(--staff-accent); padding-left:10px; margin-bottom:20px;">Staff Salary Payout Logs</h2>
         <div class="asset-table-wrapper">
@@ -718,6 +759,33 @@
       const tbody = document.getElementById('salaryTableBody');
       tbody.innerHTML = '';
       
+      // Populate Calendar Month Selector
+      const select = document.getElementById('calendarMonthSelect');
+      const currentSelection = select.value;
+      select.innerHTML = '';
+      
+      // Add July 2026 (Active unpaid month) as default choice
+      const currentMonthOpt = document.createElement('option');
+      currentMonthOpt.value = "July 2026";
+      currentMonthOpt.innerText = "July 2026 (Current)";
+      select.appendChild(currentMonthOpt);
+
+      list.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.month;
+        opt.innerText = p.month;
+        select.appendChild(opt);
+      });
+      
+      // Restore selection if valid, else default to current
+      if (currentSelection && [...select.options].some(o => o.value === currentSelection)) {
+        select.value = currentSelection;
+      } else {
+        select.value = "July 2026";
+      }
+
+      renderCalendarForSelectedMonth();
+
       if (list.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-staff-secondary); padding: 40px 0;">No salary payouts logged for this employee.</td></tr>';
         return;
@@ -739,6 +807,91 @@
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    function renderCalendarForSelectedMonth() {
+      const select = document.getElementById('calendarMonthSelect');
+      const selectedValue = select.value;
+      if (!selectedValue) return;
+
+      const list = HostelHubDB.getStaffSalaryHistory(wardenProfile.username) || [];
+      const payment = list.find(p => p.month === selectedValue);
+      
+      let present = 28;
+      let absent = 1;
+      let leaves = 2;
+      
+      if (payment) {
+        present = payment.present_days !== undefined ? payment.present_days : 30;
+        absent = payment.absent_days !== undefined ? payment.absent_days : 0;
+        leaves = payment.allowed_leaves || 2;
+      }
+
+      document.getElementById('calPresentCount').innerText = present;
+      document.getElementById('calAbsentCount').innerText = absent;
+      document.getElementById('calLeaveCount').innerText = leaves;
+
+      const parts = selectedValue.split(' ');
+      const monthName = parts[0];
+      const year = parseInt(parts[1]) || 2026;
+      
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const monthIndex = monthNames.indexOf(monthName);
+      
+      const firstDay = new Date(year, monthIndex, 1).getDay();
+      const totalDays = new Date(year, monthIndex + 1, 0).getDate();
+
+      const grid = document.getElementById('calendarDaysGrid');
+      grid.innerHTML = '';
+
+      for (let i = 0; i < firstDay; i++) {
+        const blank = document.createElement('div');
+        blank.style.height = '36px';
+        grid.appendChild(blank);
+      }
+
+      const absentDays = [];
+      const leaveDays = [];
+      
+      if (absent > 0) {
+        if (absent >= 1) absentDays.push(Math.floor(totalDays * 0.4));
+        if (absent >= 2) absentDays.push(Math.floor(totalDays * 0.8));
+      }
+      if (leaves > 0) {
+        if (leaves >= 1) leaveDays.push(Math.floor(totalDays * 0.2));
+        if (leaves >= 2) leaveDays.push(Math.floor(totalDays * 0.65));
+      }
+
+      for (let day = 1; day <= totalDays; day++) {
+        const dayCell = document.createElement('div');
+        dayCell.style.height = '36px';
+        dayCell.style.width = '36px';
+        dayCell.style.lineHeight = '36px';
+        dayCell.style.borderRadius = '50%';
+        dayCell.style.fontSize = '0.85rem';
+        dayCell.style.fontWeight = '600';
+        dayCell.style.margin = '0 auto';
+        dayCell.innerText = day;
+
+        if (absentDays.includes(day)) {
+          dayCell.style.background = 'rgba(239, 68, 68, 0.18)';
+          dayCell.style.color = '#f87171';
+          dayCell.style.border = '1px solid #ef4444';
+          dayCell.title = "Absent";
+        } else if (leaveDays.includes(day)) {
+          dayCell.style.background = 'rgba(56, 189, 248, 0.18)';
+          dayCell.style.color = '#38bdf8';
+          dayCell.style.border = '1px solid #38bdf8';
+          dayCell.title = "Allowed Leave (Paid)";
+        } else {
+          dayCell.style.background = 'rgba(16, 185, 129, 0.18)';
+          dayCell.style.color = '#34d399';
+          dayCell.style.border = '1px solid #10b981';
+          dayCell.title = "Present";
+        }
+
+        grid.appendChild(dayCell);
+      }
     }
 
     function loadFullScansTable() {
