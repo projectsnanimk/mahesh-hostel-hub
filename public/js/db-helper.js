@@ -32,11 +32,11 @@ const DEFAULT_STAFF = [
 ];
 
 const DEFAULT_SALARY_PAYMENTS = [
-  { payment_id: 'PAY00001', user_id: 'M1WDN001', username: 'm1warden', amount: 45000.00, month: 'June 2026', paid_at: '2026-06-30T14:30:00.000Z', status: 'PAID', ref_number: 'TXN891723912' },
-  { payment_id: 'PAY00002', user_id: 'M1WDN001', username: 'm1warden', amount: 45000.00, month: 'May 2026', paid_at: '2026-05-31T12:15:00.000Z', status: 'PAID', ref_number: 'TXN891102941' },
-  { payment_id: 'PAY00003', user_id: 'M1WDN001', username: 'm1warden', amount: 42000.00, month: 'April 2026', paid_at: '2026-04-30T10:00:00.000Z', status: 'PAID', ref_number: 'TXN890912401' },
-  { payment_id: 'PAY00004', user_id: 'M2WDN001', username: 'm2warden', amount: 45000.00, month: 'June 2026', paid_at: '2026-06-30T14:35:00.000Z', status: 'PAID', ref_number: 'TXN891723915' },
-  { payment_id: 'PAY00005', user_id: 'M3WDN001', username: 'm3warden', amount: 45000.00, month: 'June 2026', paid_at: '2026-06-30T14:40:00.000Z', status: 'PAID', ref_number: 'TXN891723919' }
+  { payment_id: 'PAY00001', user_id: 'M1WDN001', username: 'm1warden', amount: 45000.00, month: 'June 2026', paid_at: '2026-06-30T14:30:00.000Z', status: 'PAID', ref_number: 'TXN891723912', present_days: 30, absent_days: 0, allowed_leaves: 2 },
+  { payment_id: 'PAY00002', user_id: 'M1WDN001', username: 'm1warden', amount: 45000.00, month: 'May 2026', paid_at: '2026-05-31T12:15:00.000Z', status: 'PAID', ref_number: 'TXN891102941', present_days: 29, absent_days: 2, allowed_leaves: 2 },
+  { payment_id: 'PAY00003', user_id: 'M1WDN001', username: 'm1warden', amount: 42000.00, month: 'April 2026', paid_at: '2026-04-30T10:00:00.000Z', status: 'PAID', ref_number: 'TXN890912401', present_days: 28, absent_days: 2, allowed_leaves: 2 },
+  { payment_id: 'PAY00004', user_id: 'M2WDN001', username: 'm2warden', amount: 45000.00, month: 'June 2026', paid_at: '2026-06-30T14:35:00.000Z', status: 'PAID', ref_number: 'TXN891723915', present_days: 30, absent_days: 0, allowed_leaves: 2 },
+  { payment_id: 'PAY00005', user_id: 'M3WDN001', username: 'm3warden', amount: 45000.00, month: 'June 2026', paid_at: '2026-06-30T14:40:00.000Z', status: 'PAID', ref_number: 'TXN891723919', present_days: 30, absent_days: 0, allowed_leaves: 2 }
 ];
 
 const DEFAULT_STUDENTS = [
@@ -723,7 +723,10 @@ const db = {
       month: currentMonthYear,
       paid_at: new Date().toISOString(),
       status: 'PAID',
-      ref_number: 'TXN' + Math.floor(100000000 + Math.random() * 900000000)
+      ref_number: 'TXN' + Math.floor(100000000 + Math.random() * 900000000),
+      present_days: parseInt(presentDays) !== undefined ? parseInt(presentDays) : 30,
+      absent_days: parseInt(absentDays) !== undefined ? parseInt(absentDays) : 0,
+      allowed_leaves: 2
     };
 
     dbState.salary_payments.push(newPayment);

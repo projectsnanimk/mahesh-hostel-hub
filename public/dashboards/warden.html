@@ -429,6 +429,8 @@
                 <th>Payment ID</th>
                 <th>Month/Year</th>
                 <th>Payout Date</th>
+                <th>Working Days</th>
+                <th>Leaves Allowed</th>
                 <th>Transfer Amount</th>
                 <th>Transaction Ref</th>
                 <th>Status</th>
@@ -436,7 +438,7 @@
             </thead>
             <tbody id="salaryTableBody">
               <tr>
-                <td colspan="6" style="text-align: center; color: var(--text-staff-secondary); padding: 40px 0;">
+                <td colspan="8" style="text-align: center; color: var(--text-staff-secondary); padding: 40px 0;">
                   No salary payouts logged for this employee.
                 </td>
               </tr>
@@ -717,16 +719,20 @@
       tbody.innerHTML = '';
       
       if (list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-staff-secondary); padding: 40px 0;">No salary payouts logged for this employee.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-staff-secondary); padding: 40px 0;">No salary payouts logged for this employee.</td></tr>';
         return;
       }
       
       list.forEach(p => {
+        const totalWorkingDays = (p.present_days || 0) + (p.absent_days || 0) || 30;
+        const leavesAllowed = p.allowed_leaves || 2;
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><strong>${p.payment_id}</strong></td>
           <td>${p.month}</td>
           <td>${new Date(p.paid_at).toLocaleString('en-IN')}</td>
+          <td><strong>${p.present_days || 30}</strong> / ${totalWorkingDays} Days Present</td>
+          <td><span style="color:#38bdf8; font-weight:600;">${leavesAllowed} Leaves</span></td>
           <td style="color:var(--color-success); font-weight:700;">₹${p.amount.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
           <td style="font-family:monospace; color:var(--text-staff-secondary);">${p.ref_number}</td>
           <td><span class="badge-status badge-healthy">${p.status}</span></td>
