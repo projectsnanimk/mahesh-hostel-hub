@@ -1622,7 +1622,7 @@
 
         populateInventoryTable(inventory);
       } catch (err) {
-        showToast('Local database processing error updating kitchen stats.', 'error');
+        showToast('Local database processing error: ' + err.message, 'error');
         console.error(err);
       }
     }

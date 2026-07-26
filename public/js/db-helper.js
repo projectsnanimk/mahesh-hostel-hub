@@ -123,19 +123,29 @@ function initStorageDb() {
   
   let changed = false;
   if (!db.hostels) { db.hostels = DEFAULT_HOSTELS; changed = true; }
-  if (!db.central_kitchen_assets) { 
+  if (!db.central_kitchen_assets || !Array.isArray(db.central_kitchen_assets)) { 
     db.central_kitchen_assets = DEFAULT_ASSETS; 
     changed = true; 
   } else {
+    // Filter out any null/undefined entries defensively
+    db.central_kitchen_assets = db.central_kitchen_assets.filter(Boolean);
+    
     // Migrate existing assets to the new schema
     db.central_kitchen_assets.forEach(asset => {
-      if (asset.opening_stock === undefined) {
-        asset.opening_stock = parseFloat(asset.stock_quantity_kg) || 0;
-        asset.today_inward = 0.00;
-        asset.today_issued = 0.00;
-        asset.minimum_threshold = parseFloat(asset.alert_threshold_kg) || 0;
-        asset.total_capacity = parseFloat(asset.alert_threshold_kg) * 10 || 500;
-        changed = true;
+      if (asset) {
+        if (asset.opening_stock === undefined) {
+          asset.opening_stock = parseFloat(asset.stock_quantity_kg) || 0;
+          asset.today_inward = 0.00;
+          asset.today_issued = 0.00;
+          asset.minimum_threshold = parseFloat(asset.alert_threshold_kg) || 0;
+          asset.total_capacity = parseFloat(asset.alert_threshold_kg) * 10 || 500;
+          changed = true;
+        }
+        if (asset.today_inward === undefined) { asset.today_inward = 0.00; changed = true; }
+        if (asset.today_issued === undefined) { asset.today_issued = 0.00; changed = true; }
+        if (asset.opening_stock === undefined) { asset.opening_stock = parseFloat(asset.stock_quantity_kg) || 0.00; changed = true; }
+        if (asset.minimum_threshold === undefined) { asset.minimum_threshold = parseFloat(asset.alert_threshold_kg) || 0.00; changed = true; }
+        if (asset.total_capacity === undefined) { asset.total_capacity = parseFloat(asset.alert_threshold_kg) * 10 || 500.00; changed = true; }
       }
     });
   }
@@ -469,7 +479,7 @@ const db = {
     });
 
     // Check inventory stock warning reconciliation buffers
-    const assetsWithAlerts = dbState.central_kitchen_assets.map(asset => {
+    const assetsWithAlerts = dbState.central_kitchen_assets.filter(Boolean).map(asset => {
       const opening = parseFloat(asset.opening_stock) || 0;
       const inward = parseFloat(asset.today_inward) || 0;
       const issued = parseFloat(asset.today_issued) || 0;
@@ -522,7 +532,7 @@ const db = {
       return false;
     }
 
-    dbState.central_kitchen_assets.forEach(asset => {
+    dbState.central_kitchen_assets.filter(Boolean).forEach(asset => {
       const opening = parseFloat(asset.opening_stock) || 0;
       const inward = parseFloat(asset.today_inward) || 0;
       const issued = parseFloat(asset.today_issued) || 0;
