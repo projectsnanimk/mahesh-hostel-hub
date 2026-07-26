@@ -9,6 +9,78 @@
   <!-- HTML5 QR Code Scanner Library from CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
   <style>
+    /* Dark Premium Nav Drawer for Warden */
+    .nav-drawer {
+      background-color: #0f172a !important;
+      border-right: 1px solid var(--border-staff) !important;
+      color: var(--text-staff-primary) !important;
+    }
+    .drawer-header {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+      border-bottom: 1px solid var(--border-staff) !important;
+    }
+    .drawer-title {
+      color: white !important;
+    }
+    .drawer-close-btn {
+      background: #1e293b !important;
+      border: 1px solid var(--border-staff) !important;
+      color: var(--text-staff-secondary) !important;
+    }
+    .drawer-close-btn:hover {
+      background: #ef4444 !important;
+      color: white !important;
+      border-color: #ef4444 !important;
+    }
+    .drawer-menu-link {
+      color: var(--text-staff-secondary) !important;
+      cursor: pointer;
+    }
+    .drawer-menu-link:hover {
+      background: rgba(13, 148, 136, 0.1) !important;
+      color: #38bdf8 !important;
+    }
+    .drawer-menu-icon {
+      background: #1e293b !important;
+      color: var(--text-staff-secondary) !important;
+    }
+    .drawer-menu-link:hover .drawer-menu-icon {
+      background: #0d9488 !important;
+      color: white !important;
+    }
+    .drawer-footer {
+      border-top: 1px solid var(--border-staff) !important;
+      color: var(--text-staff-secondary) !important;
+      padding: 15px;
+      font-size: 0.8rem;
+    }
+    
+    /* Hamburger styling overrides for dark theme */
+    .hamburger-btn {
+      background: #151c2c !important;
+      border: 1px solid var(--border-staff) !important;
+      border-radius: var(--radius-sm);
+      padding: 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      width: 36px;
+      height: 32px;
+      z-index: 1001;
+      gap: 4px;
+    }
+    .hamburger-line {
+      display: block;
+      width: 100%;
+      height: 2px;
+      background-color: var(--text-staff-primary);
+      transition: transform 0.3s, opacity 0.3s;
+    }
+    .hamburger-btn:hover {
+      background: #1e293b !important;
+    }
+
     /* Modern Scanner Reticle Overlay */
     @keyframes verticalScan {
       0% { top: 0%; opacity: 0.8; }
@@ -65,8 +137,59 @@
   </style>
 </head>
 <body class="dark-theme">
+  <!-- Side Navigation Drawer Backdrop -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer()"></div>
+
+  <!-- Side Navigation Drawer -->
+  <nav class="nav-drawer" id="navDrawer" aria-label="Warden Portal Navigation">
+    <div class="drawer-header">
+      <div class="drawer-title-box">
+        <span class="drawer-title">Warden Menu</span>
+      </div>
+      <button class="drawer-close-btn" id="drawerCloseBtn" onclick="toggleDrawer()" aria-label="Close menu">&times;</button>
+    </div>
+    
+    <ul class="drawer-menu-list">
+      <li class="drawer-menu-item">
+        <a class="drawer-menu-link" onclick="handleDrawerNav('tab-home')">
+          <span class="drawer-menu-icon">🏠</span>
+          <span>1. Home</span>
+        </a>
+      </li>
+      <li class="drawer-menu-item">
+        <a class="drawer-menu-link" onclick="handleDrawerNav('tab-scans')">
+          <span class="drawer-menu-icon">📋</span>
+          <span>2. Recent Portion Scans</span>
+        </a>
+      </li>
+      <li class="drawer-menu-item">
+        <a class="drawer-menu-link" onclick="handleDrawerNav('tab-profile')">
+          <span class="drawer-menu-icon">📇</span>
+          <span>3. My ID Card & Details</span>
+        </a>
+      </li>
+      <li class="drawer-menu-item">
+        <a class="drawer-menu-link" onclick="handleDrawerNav('tab-salary')">
+          <span class="drawer-menu-icon">💰</span>
+          <span>4. Salary History</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="drawer-footer">
+      HostelHub Staff Portal &copy; 2026<br>Mahesh Hostels Management
+    </div>
+  </nav>
+
   <header class="app-header">
-    <div class="brand">HostelHub Warden</div>
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleDrawer()" aria-label="Toggle navigation menu">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
+      <div class="brand" style="margin-left: 0;">HostelHub Warden</div>
+    </div>
     <div class="nav-user">
       <div class="user-badge">
         <div class="user-avatar" id="navAvatar" style="background:#0d9488;">W</div>
@@ -80,79 +203,241 @@
   </header>
 
   <main class="main-content">
-    <div class="dashboard-grid">
-      <!-- Active Scanning Module -->
-      <div class="card" style="grid-column: span 6;">
-        <h2 class="card-title">Mess Scanner Terminal</h2>
-        <p style="color: var(--text-staff-secondary); font-size: 0.9rem; margin-bottom: 20px;">
-          Emulate dynamic QR tracking below. Scan student barcodes to check meal slots and prevent multiple servings.
-        </p>
+    
+    <!-- --------------------------------------------------
+         TAB 1: HOME (SCANNER STATION)
+         -------------------------------------------------- -->
+    <div id="tab-home" class="tab-content active">
+      <div class="dashboard-grid">
+        <!-- Active Scanning Module -->
+        <div class="card" style="grid-column: span 6;">
+          <h2 class="card-title">Mess Scanner Terminal</h2>
+          <p style="color: var(--text-staff-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+            Emulate dynamic QR tracking below. Scan student barcodes to check meal slots and prevent multiple servings.
+          </p>
 
-        <!-- Dynamic Laser Flash Visualizer -->
-        <div class="scan-visualizer" id="scanVisualizer" style="height: auto; min-height: 250px; padding: 15px 15px 5px 15px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <div class="scan-laser" id="scanLaser" style="z-index: 10; display: none;"></div>
-          
-          <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%;">
-            <!-- Static visual elements when camera is standby -->
-            <div id="visualizerStandbyContent" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-              <div style="font-size: 3rem; margin-bottom: 8px;">📷</div>
-            </div>
+          <!-- Dynamic Laser Flash Visualizer -->
+          <div class="scan-visualizer" id="scanVisualizer" style="height: auto; min-height: 250px; padding: 15px 15px 5px 15px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div class="scan-laser" id="scanLaser" style="z-index: 10; display: none;"></div>
             
-            <!-- Integrated Camera Viewport -->
-            <div id="cameraReaderContainer" style="display: none; width: 100%; max-width: 420px; border-radius: 12px; overflow: hidden; background: #000; position: relative; border: 2px solid rgba(255,255,255,0.08); box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
-              <div id="cameraReader" style="width: 100%;"></div>
+            <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%;">
+              <!-- Static visual elements when camera is standby -->
+              <div id="visualizerStandbyContent" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div style="font-size: 3rem; margin-bottom: 8px;">📷</div>
+              </div>
               
-              <!-- Modern Overlay Reticle -->
-              <div class="modern-scanner-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; align-items: center; justify-content: center; z-index: 12;">
-                <!-- Scanning Viewport Frame -->
-                <div class="scanner-viewport" style="width: 200px; height: 200px; position: relative; box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.6); border: 2px solid rgba(255, 255, 255, 0.1); border-radius: 12px;">
-                  <!-- Target Corners -->
-                  <div class="corner tl" style="position: absolute; top: -2px; left: -2px; width: 20px; height: 20px; border-top: 4px solid #38bdf8; border-left: 4px solid #38bdf8; border-top-left-radius: 6px;"></div>
-                  <div class="corner tr" style="position: absolute; top: -2px; right: -2px; width: 20px; height: 20px; border-top: 4px solid #38bdf8; border-right: 4px solid #38bdf8; border-top-right-radius: 6px;"></div>
-                  <div class="corner bl" style="position: absolute; bottom: -2px; left: -2px; width: 20px; height: 20px; border-bottom: 4px solid #38bdf8; border-left: 4px solid #38bdf8; border-bottom-left-radius: 6px;"></div>
-                  <div class="corner br" style="position: absolute; bottom: -2px; right: -2px; width: 20px; height: 20px; border-bottom: 4px solid #38bdf8; border-right: 4px solid #38bdf8; border-bottom-right-radius: 6px;"></div>
-                  
-                  <!-- Contain scanning laser inside target viewport -->
-                  <div class="laser-line" style="position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(to right, transparent, #38bdf8, transparent); box-shadow: 0 0 8px #38bdf8; animation: verticalScan 2s infinite ease-in-out;"></div>
+              <!-- Integrated Camera Viewport -->
+              <div id="cameraReaderContainer" style="display: none; width: 100%; max-width: 420px; border-radius: 12px; overflow: hidden; background: #000; position: relative; border: 2px solid rgba(255,255,255,0.08); box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+                <div id="cameraReader" style="width: 100%;"></div>
+                
+                <!-- Modern Overlay Reticle -->
+                <div class="modern-scanner-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; align-items: center; justify-content: center; z-index: 12;">
+                  <!-- Scanning Viewport Frame -->
+                  <div class="scanner-viewport" style="width: 200px; height: 200px; position: relative; box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.6); border: 2px solid rgba(255, 255, 255, 0.1); border-radius: 12px;">
+                    <!-- Target Corners -->
+                    <div class="corner tl" style="position: absolute; top: -2px; left: -2px; width: 20px; height: 20px; border-top: 4px solid #38bdf8; border-left: 4px solid #38bdf8; border-top-left-radius: 6px;"></div>
+                    <div class="corner tr" style="position: absolute; top: -2px; right: -2px; width: 20px; height: 20px; border-top: 4px solid #38bdf8; border-right: 4px solid #38bdf8; border-top-right-radius: 6px;"></div>
+                    <div class="corner bl" style="position: absolute; bottom: -2px; left: -2px; width: 20px; height: 20px; border-bottom: 4px solid #38bdf8; border-left: 4px solid #38bdf8; border-bottom-left-radius: 6px;"></div>
+                    <div class="corner br" style="position: absolute; bottom: -2px; right: -2px; width: 20px; height: 20px; border-bottom: 4px solid #38bdf8; border-right: 4px solid #38bdf8; border-bottom-right-radius: 6px;"></div>
+                    
+                    <!-- Contain scanning laser inside target viewport -->
+                    <div class="laser-line" style="position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(to right, transparent, #38bdf8, transparent); box-shadow: 0 0 8px #38bdf8; animation: verticalScan 2s infinite ease-in-out;"></div>
+                  </div>
                 </div>
               </div>
             </div>
+            
+            <div id="scannerStatus" style="font-size: 0.85rem; font-weight: 700; color: var(--text-staff-secondary); padding: 8px; width: 100%; text-align: center; border-top: 1px dashed rgba(255,255,255,0.08); margin-top: 15px; z-index: 11;">
+              Scanner Standby: Awaiting Input
+            </div>
           </div>
-          
-          <div id="scannerStatus" style="font-size: 0.85rem; font-weight: 700; color: var(--text-staff-secondary); padding: 8px; width: 100%; text-align: center; border-top: 1px dashed rgba(255,255,255,0.08); margin-top: 15px; z-index: 11;">
-            Scanner Standby: Awaiting Input
+
+          <!-- Live Camera Scanner Controls -->
+          <div style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; gap: 10px;">
+              <button class="btn-submit" id="startCamBtn" onclick="startCameraScanner()" style="background: #0284c7; margin-top: 0; font-size: 0.95rem; flex: 1; font-weight:700;">📷 Open Live Camera Scanner</button>
+              <button class="btn-submit" id="stopCamBtn" onclick="stopCameraScanner()" style="background: #ef4444; margin-top: 0; font-size: 0.95rem; display: none; width: 100%; font-weight:700;">🛑 Stop Camera</button>
+            </div>
           </div>
+
+          <form id="scanQrForm">
+            <div class="form-group">
+              <label class="form-label" for="qrToken">Scan QR Token string</label>
+              <input class="form-input" type="text" id="qrToken" placeholder="Paste Student JSON QR Payload" required autocomplete="off">
+            </div>
+            <button class="btn-submit" type="submit" style="background:var(--staff-accent);">Validate Student Scan</button>
+          </form>
         </div>
 
-        <!-- Live Camera Scanner Controls -->
-        <div style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px;">
-          <div style="display: flex; gap: 10px;">
-            <button class="btn-submit" id="startCamBtn" onclick="startCameraScanner()" style="background: #0284c7; margin-top: 0; font-size: 0.95rem; flex: 1; font-weight:700;">📷 Open Live Camera Scanner</button>
-            <button class="btn-submit" id="stopCamBtn" onclick="stopCameraScanner()" style="background: #ef4444; margin-top: 0; font-size: 0.95rem; display: none; width: 100%; font-weight:700;">🛑 Stop Camera</button>
+        <!-- Real-Time Transactions & Info -->
+        <div class="card" style="grid-column: span 6; display: flex; flex-direction: column;">
+          <h2 class="card-title">Recent Portion Scans</h2>
+          <div style="flex-grow: 1; border: 1px solid var(--border-staff); border-radius: var(--radius-sm); padding: 15px; background: rgba(0,0,0,0.1);">
+            <ul class="scan-log-list" id="scanLogsContainer">
+              <li class="scan-log-item" style="color: var(--text-staff-secondary); text-align: center; justify-content: center; padding: 40px 0;">
+                No scans executed in this session.
+              </td>
+            </ul>
           </div>
-        </div>
-
-        <form id="scanQrForm">
-          <div class="form-group">
-            <label class="form-label" for="qrToken">Scan QR Token string</label>
-            <input class="form-input" type="text" id="qrToken" placeholder="Paste Student JSON QR Payload" required autocomplete="off">
-          </div>
-          <button class="btn-submit" type="submit" style="background:var(--staff-accent);">Validate Student Scan</button>
-        </form>
-      </div>
-
-      <!-- Real-Time Transactions & Info -->
-      <div class="card" style="grid-column: span 6; display: flex; flex-direction: column;">
-        <h2 class="card-title">Recent Portion Scans</h2>
-        <div style="flex-grow: 1; border: 1px solid var(--border-staff); border-radius: var(--radius-sm); padding: 15px; background: rgba(0,0,0,0.1);">
-          <ul class="scan-log-list" id="scanLogsContainer">
-            <li class="scan-log-item" style="color: var(--text-staff-secondary); text-align: center; justify-content: center; padding: 40px 0;">
-              No scans executed in this session.
-            </li>
-          </ul>
         </div>
       </div>
     </div>
+
+    <!-- --------------------------------------------------
+         TAB 2: RECENT PORTION SCANS (FULL TABLE & PDF)
+         -------------------------------------------------- -->
+    <div id="tab-scans" class="tab-content">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+          <h2 class="card-title" style="margin-bottom:0;">Session Portion Scan Logs</h2>
+          <button class="btn-primary" onclick="downloadScansPDF()" style="background:#0d9488; display:flex; align-items:center; gap:8px; font-weight:700; border:none; padding:8px 16px; border-radius:8px; color:white; cursor:pointer;">
+            📄 Download PDF Report
+          </button>
+        </div>
+        <div class="asset-table-wrapper">
+          <table class="asset-table">
+            <thead>
+              <tr>
+                <th style="width: 80px;">S.No</th>
+                <th>Student ID</th>
+                <th>Scanned At</th>
+                <th>Status</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody id="fullScansTableBody">
+              <tr>
+                <td colspan="5" style="text-align: center; color: var(--text-staff-secondary); padding: 40px 0;">
+                  No scans executed in this session.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- --------------------------------------------------
+         TAB 3: MY IDCARD & MY DETAILS
+         -------------------------------------------------- -->
+    <div id="tab-profile" class="tab-content">
+      <div class="dashboard-grid">
+        <!-- Warden Details Card -->
+        <div class="card" style="grid-column: span 6;">
+          <h2 class="card-title" style="border-left: 3px solid #0d9488; padding-left: 10px; margin-bottom: 20px;">Employee Profile Details</h2>
+          <div style="display:flex; flex-direction:column; gap: 15px;">
+            <div style="display:flex; justify-content:space-between; border-bottom:1px dashed rgba(255,255,255,0.08); padding-bottom:10px;">
+              <span style="color:var(--text-staff-secondary);">Employee ID:</span>
+              <strong id="profId" style="color:var(--text-staff-primary);">N/A</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px dashed rgba(255,255,255,0.08); padding-bottom:10px;">
+              <span style="color:var(--text-staff-secondary);">Warden Name:</span>
+              <strong id="profName" style="color:var(--text-staff-primary);">N/A</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px dashed rgba(255,255,255,0.08); padding-bottom:10px;">
+              <span style="color:var(--text-staff-secondary);">Email Address:</span>
+              <strong id="profEmail" style="color:var(--text-staff-primary);">N/A</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px dashed rgba(255,255,255,0.08); padding-bottom:10px;">
+              <span style="color:var(--text-staff-secondary);">Assigned Block:</span>
+              <strong id="profBlock" style="color:#38bdf8;">N/A</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px dashed rgba(255,255,255,0.08); padding-bottom:10px;">
+              <span style="color:var(--text-staff-secondary);">Designation Role:</span>
+              <strong id="profRole" style="color:#c084fc;">Mess Warden</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px dashed rgba(255,255,255,0.08); padding-bottom:10px;">
+              <span style="color:var(--text-staff-secondary);">Monthly Salary:</span>
+              <strong id="profSalary" style="color:var(--color-success);">₹45,000.00</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px dashed rgba(255,255,255,0.08); padding-bottom:10px;">
+              <span style="color:var(--text-staff-secondary);">Payout Mode:</span>
+              <strong style="color:var(--text-staff-primary);">Monthly Bank Transfer</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding-bottom:10px;">
+              <span style="color:var(--text-staff-secondary);">Employment Status:</span>
+              <span class="badge-status badge-healthy">ACTIVE MEMBER</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Warden ID Card Card -->
+        <div class="card" style="grid-column: span 6; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+          <h2 class="card-title" style="width:100%; text-align:left; margin-bottom:25px;">Official Identity Card</h2>
+          
+          <!-- Identity Card Badge Container -->
+          <div id="wardenIdBadge" style="width: 300px; height: 440px; background: linear-gradient(135deg, #0d9488 0%, #1e1b4b 50%, #0f172a 100%); border-radius: 20px; padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.1); display:flex; flex-direction:column; align-items:center; justify-content:space-between; position:relative; color:#fff; text-align:center; overflow:hidden;">
+            <div style="position:absolute; top:-10%; left:-20%; width:150%; height:50%; background:rgba(255,255,255,0.05); transform:rotate(-15deg); pointer-events:none;"></div>
+            
+            <div style="width:100%;">
+              <div style="font-size:0.75rem; font-weight:800; letter-spacing:2px; color:#38bdf8;">MAHESH HOSTELS</div>
+              <div style="font-size:0.6rem; color:rgba(255,255,255,0.6); margin-top:2px; font-weight:600;">STAFF IDENTITY CARD</div>
+            </div>
+            
+            <div style="display:flex; flex-direction:column; align-items:center; gap:12px; margin-top:10px; width:100%;">
+              <div id="badgeAvatar" style="width:90px; height:90px; border-radius:50%; background:#0d9488; border:4px solid rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:2.2rem; font-weight:800; box-shadow:0 8px 16px rgba(0,0,0,0.3); color:#fff; text-shadow:1px 1px 2px rgba(0,0,0,0.3);">
+                WD
+              </div>
+              
+              <div style="margin-top:5px;">
+                <div id="badgeName" style="font-size:1.15rem; font-weight:800; color:#fff;">WARDEN NAME</div>
+                <div id="badgeRole" style="font-size:0.7rem; font-weight:700; color:#38bdf8; background:rgba(56,189,248,0.1); padding:3px 10px; border-radius:12px; margin-top:6px; display:inline-block; border:1px solid rgba(56,189,248,0.2);">MESS WARDEN (BLOCK M1)</div>
+              </div>
+            </div>
+            
+            <div style="width:100%; border-top:1px solid rgba(255,255,255,0.1); padding-top:12px; display:flex; justify-content:space-between; align-items:center; font-size:0.7rem;">
+              <div style="text-align:left;">
+                <div style="color:rgba(255,255,255,0.5); font-size:0.6rem;">EMPLOYEE ID</div>
+                <div id="badgeId" style="font-weight:700; margin-top:2px;">M1WDN001</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="color:rgba(255,255,255,0.5); font-size:0.65rem;">HOSTEL BLOCK</div>
+                <div id="badgeBlock" style="font-weight:700; margin-top:2px; color:#38bdf8;">M1 BLOCK</div>
+              </div>
+            </div>
+            
+            <div style="background:#fff; padding:5px; border-radius:6px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(0,0,0,0.2); margin-top:5px;">
+              <div id="badgeQr" style="width:45px; height:45px; background-size:cover;"></div>
+            </div>
+          </div>
+          
+          <button class="btn-primary" onclick="printWardenIDCard()" style="background:#7c3aed; margin-top:20px; display:flex; align-items:center; gap:8px; font-weight:700; border:none; padding:8px 16px; border-radius:8px; color:white; cursor:pointer;">
+            🖨️ Print ID Card Badge
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- --------------------------------------------------
+         TAB 4: SALARY HISTORY
+         -------------------------------------------------- -->
+    <div id="tab-salary" class="tab-content">
+      <div class="card">
+        <h2 class="card-title" style="border-left:3px solid var(--staff-accent); padding-left:10px; margin-bottom:20px;">Staff Salary Payout Logs</h2>
+        <div class="asset-table-wrapper">
+          <table class="asset-table">
+            <thead>
+              <tr>
+                <th>Payment ID</th>
+                <th>Month/Year</th>
+                <th>Payout Date</th>
+                <th>Transfer Amount</th>
+                <th>Transaction Ref</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="salaryTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-staff-secondary); padding: 40px 0;">
+                  No salary payouts logged for this employee.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <div class="toast-container" id="toastContainer"></div>
@@ -226,6 +511,24 @@
         document.getElementById('navName').innerText = `${payload.username.toUpperCase()} (Block ${payload.assigned_hostel})`;
         document.getElementById('navRole').innerText = `Warden Block ${payload.assigned_hostel}`;
         document.getElementById('navAvatar').innerText = payload.assigned_hostel;
+
+        // Populate profile fields
+        document.getElementById('profId').innerText = payload.user_id || 'N/A';
+        document.getElementById('profName').innerText = (payload.username || 'warden').toUpperCase();
+        document.getElementById('profEmail').innerText = payload.email || 'N/A';
+        document.getElementById('profBlock').innerText = payload.assigned_hostel ? `Block ${payload.assigned_hostel}` : 'Global';
+        document.getElementById('profSalary').innerText = `₹${(parseFloat(payload.monthly_salary) || 45000).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+
+        // Populate ID Badge fields
+        document.getElementById('badgeId').innerText = payload.user_id || 'N/A';
+        document.getElementById('badgeName').innerText = (payload.username || 'warden').toUpperCase();
+        document.getElementById('badgeBlock').innerText = `${payload.assigned_hostel || 'W'} BLOCK`;
+        document.getElementById('badgeRole').innerText = `MESS WARDEN (BLOCK ${payload.assigned_hostel || 'W'})`;
+        document.getElementById('badgeAvatar').innerText = (payload.username || 'WD').slice(0, 2).toUpperCase();
+
+        const qrData = encodeURIComponent(JSON.stringify({ staff_id: payload.user_id, role: 'WARDEN' }));
+        document.getElementById('badgeQr').style.backgroundImage = `url('https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${qrData}')`;
+
       } catch (e) {
         logout();
       }
@@ -379,6 +682,197 @@
       
       container.insertBefore(logItem, container.firstChild);
       sessionScans.push({ studentId, timestamp, isSuccess });
+    }
+
+    function toggleDrawer() {
+      document.getElementById('navDrawer').classList.toggle('active');
+      document.getElementById('drawerOverlay').classList.toggle('active');
+    }
+
+    function handleDrawerNav(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => {
+        el.classList.remove('active');
+      });
+      document.getElementById(tabId).classList.add('active');
+      toggleDrawer();
+
+      if (tabId === 'tab-salary') {
+        loadSalaryHistory();
+      } else if (tabId === 'tab-scans') {
+        loadFullScansTable();
+      }
+    }
+
+    function loadSalaryHistory() {
+      const list = HostelHubDB.getStaffSalaryHistory(wardenProfile.username) || [];
+      const tbody = document.getElementById('salaryTableBody');
+      tbody.innerHTML = '';
+      
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-staff-secondary); padding: 40px 0;">No salary payouts logged for this employee.</td></tr>';
+        return;
+      }
+      
+      list.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${p.payment_id}</strong></td>
+          <td>${p.month}</td>
+          <td>${new Date(p.paid_at).toLocaleString('en-IN')}</td>
+          <td style="color:var(--color-success); font-weight:700;">₹${p.amount.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
+          <td style="font-family:monospace; color:var(--text-staff-secondary);">${p.ref_number}</td>
+          <td><span class="badge-status badge-healthy">${p.status}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function loadFullScansTable() {
+      const tbody = document.getElementById('fullScansTableBody');
+      tbody.innerHTML = '';
+      
+      if (sessionScans.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-staff-secondary); padding: 40px 0;">No scans executed in this session.</td></tr>';
+        return;
+      }
+      
+      sessionScans.forEach((scan, idx) => {
+        const tr = document.createElement('tr');
+        const statusBadge = scan.isSuccess ? 
+          '<span class="badge-status badge-healthy">SUCCESS</span>' : 
+          '<span class="badge-status badge-critical">DENIED</span>';
+        
+        tr.innerHTML = `
+          <td>${idx + 1}</td>
+          <td><strong>${scan.studentId}</strong></td>
+          <td>${new Date(scan.timestamp).toLocaleString('en-IN')}</td>
+          <td>${statusBadge}</td>
+          <td style="color:var(--text-staff-secondary);">${scan.details || (scan.isSuccess ? 'Portion allocated successfully.' : 'Mess scan validation error.')}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function downloadScansPDF() {
+      const list = sessionScans;
+      const printWindow = window.open('', '_blank', 'width=800,height=600');
+      let rowsHtml = '';
+      
+      if (list.length === 0) {
+        rowsHtml = `
+          <tr>
+            <td colspan="5" style="padding:15px; text-align:center; color:#6b7280;">No scans executed in this session.</td>
+          </tr>
+        `;
+      } else {
+        list.forEach((scan, idx) => {
+          const statusBadge = scan.isSuccess ? 
+            '<span style="color:#10b981; font-weight:bold;">SUCCESS</span>' : 
+            '<span style="color:#ef4444; font-weight:bold;">DENIED</span>';
+          
+          rowsHtml += `
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding:10px; text-align:left;">${idx + 1}</td>
+              <td style="padding:10px; text-align:left;"><strong>${scan.studentId}</strong></td>
+              <td style="padding:10px; text-align:left;">${new Date(scan.timestamp).toLocaleString('en-IN')}</td>
+              <td style="padding:10px; text-align:left;">${statusBadge}</td>
+              <td style="padding:10px; text-align:left; font-size:0.9rem; color:#4b5563;">${scan.details || (scan.isSuccess ? 'Portion allocated successfully.' : 'Mess validation failed.')}</td>
+            </tr>
+          `;
+        });
+      }
+
+      const content = `
+        <html>
+        <head>
+          <title>Mess Portion Scans Report</title>
+          <style>
+            body { font-family: 'Segoe UI', sans-serif; padding: 40px; color: #1f2937; }
+            .header { border-bottom: 2px solid #0d9488; padding-bottom: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+            .title { font-size: 1.6rem; font-weight: bold; color: #0d9488; }
+            .meta { font-size: 0.9rem; color: #6b7280; text-align: right; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+            th { background-color: #f3f4f6; color: #374151; font-weight: bold; padding: 12px 10px; text-align: left; border-bottom: 2px solid #e5e7eb; }
+            td { padding: 12px 10px; border-bottom: 1px solid #e5e7eb; }
+            .footer { margin-top: 50px; font-size: 0.85rem; color: #9ca3af; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 15px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <div class="title">MAHESH HOSTELS PRIVATE LTD</div>
+              <div style="font-size:0.95rem; color:#4b5563; margin-top:4px;">Mess Portion Allocations Checkpoint Report</div>
+            </div>
+            <div class="meta">
+              <div>Warden ID: ${wardenProfile.user_id || 'N/A'}</div>
+              <div>Hostel Block: ${wardenProfile.assigned_hostel || 'N/A'}</div>
+              <div>Date: ${new Date().toLocaleDateString('en-IN')}</div>
+            </div>
+          </div>
+          
+          <h3>Portion Allocation Activity Logs (Current Session)</h3>
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 80px;">S.No</th>
+                <th>Student ID</th>
+                <th>Scanned At</th>
+                <th>Status</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          
+          <div class="footer">
+            This is an official verification log generated by the HostelHub Warden Console. &copy; 2026 Mahesh Hostels Management.
+          </div>
+          
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            }
+          <\/script>
+        </body>
+        </html>
+      `;
+      
+      printWindow.document.write(content);
+      printWindow.document.close();
+    }
+
+    function printWardenIDCard() {
+      const printWindow = window.open('', '_blank', 'width=450,height=650');
+      const badgeHtml = document.getElementById('wardenIdBadge').outerHTML;
+      
+      const content = `
+        <html>
+        <head>
+          <title>Warden ID Badge - Print</title>
+          <style>
+            body { display:flex; align-items:center; justify-content:center; height:100vh; margin:0; background:#f3f4f6; font-family:sans-serif; }
+            @media print {
+              body { background: none; }
+              #wardenIdBadge { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-shadow: none !important; border: 1px solid #ccc !important; }
+            }
+          </style>
+        </head>
+        <body>
+          ${badgeHtml}
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            }
+          <\/script>
+        </body>
+        </html>
+      `;
+      printWindow.document.write(content);
+      printWindow.document.close();
     }
 
     function logout() {

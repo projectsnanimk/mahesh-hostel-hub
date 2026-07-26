@@ -2329,11 +2329,23 @@
 
     function processPayout(btn, name, baseVal) {
       const row = btn.closest('tr');
-      const present = row.querySelector('.present-days').value;
-      const absent = row.querySelector('.absent-days').value;
+      const present = parseInt(row.querySelector('.present-days').value) || 0;
+      const absent = parseInt(row.querySelector('.absent-days').value) || 0;
       const amountStr = row.querySelector('.net-salary-val').innerText;
-
-      showToast(`Payout Success! Transferred ${amountStr} salary to staff member ${name.toUpperCase()} (Days: ${present} Present, ${absent} Absent).`, 'success');
+      
+      const amount = parseFloat(amountStr.replace(/[^0-9.]/g, '')) || baseVal;
+      
+      try {
+        const result = HostelHubDB.payStaffSalary(name, amount, present, absent);
+        if (result.status === 'SUCCESS') {
+          showToast(`Payout Success! Transferred ₹${amount.toLocaleString('en-IN', {minimumFractionDigits: 2})} salary to staff member ${name.toUpperCase()} (Ref: ${result.ref}).`, 'success');
+        } else {
+          showToast('Failed to log payout record: ' + result.message, 'error');
+        }
+      } catch (err) {
+        showToast('Error recording payout in database.', 'error');
+        console.error(err);
+      }
     }
 
     function openAddStaffModal() {

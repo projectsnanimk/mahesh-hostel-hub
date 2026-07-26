@@ -31,6 +31,14 @@ const DEFAULT_STAFF = [
   { user_id: 'M3WCH001', username: 'm3watchman', email: 'm3watchman@hostelhub.com', password: 'WCHM3W2026', user_role: 'WATCHMAN', assigned_hostel: 'M3', monthly_salary: 25000.00 }
 ];
 
+const DEFAULT_SALARY_PAYMENTS = [
+  { payment_id: 'PAY00001', user_id: 'M1WDN001', username: 'm1warden', amount: 45000.00, month: 'June 2026', paid_at: '2026-06-30T14:30:00.000Z', status: 'PAID', ref_number: 'TXN891723912' },
+  { payment_id: 'PAY00002', user_id: 'M1WDN001', username: 'm1warden', amount: 45000.00, month: 'May 2026', paid_at: '2026-05-31T12:15:00.000Z', status: 'PAID', ref_number: 'TXN891102941' },
+  { payment_id: 'PAY00003', user_id: 'M1WDN001', username: 'm1warden', amount: 42000.00, month: 'April 2026', paid_at: '2026-04-30T10:00:00.000Z', status: 'PAID', ref_number: 'TXN890912401' },
+  { payment_id: 'PAY00004', user_id: 'M2WDN001', username: 'm2warden', amount: 45000.00, month: 'June 2026', paid_at: '2026-06-30T14:35:00.000Z', status: 'PAID', ref_number: 'TXN891723915' },
+  { payment_id: 'PAY00005', user_id: 'M3WDN001', username: 'm3warden', amount: 45000.00, month: 'June 2026', paid_at: '2026-06-30T14:40:00.000Z', status: 'PAID', ref_number: 'TXN891723919' }
+];
+
 const DEFAULT_STUDENTS = [
   { 
     student_id: 'M1120726001', 
@@ -154,6 +162,7 @@ function initStorageDb() {
   if (!db.mess_attendance_logs) { db.mess_attendance_logs = []; changed = true; }
   if (!db.gate_logs) { db.gate_logs = []; changed = true; }
   if (!db.feedbacks) { db.feedbacks = DEFAULT_FEEDBACKS; changed = true; }
+  if (!db.salary_payments) { db.salary_payments = DEFAULT_SALARY_PAYMENTS; changed = true; }
   
   if (changed || !raw) {
     localStorage.setItem('hostelhub_db', JSON.stringify(db));
@@ -684,6 +693,42 @@ const db = {
         student_name: student ? student.full_name : 'Unknown Student'
       };
     }).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  },
+
+  getStaffSalaryHistory: (username) => {
+    const dbState = getDb();
+    if (!dbState.salary_payments) dbState.salary_payments = [];
+    return dbState.salary_payments
+      .filter(p => p && p.username.toLowerCase() === username.toLowerCase())
+      .sort((a, b) => new Date(b.paid_at) - new Date(a.paid_at));
+  },
+
+  payStaffSalary: (username, amount, presentDays, absentDays) => {
+    const dbState = getDb();
+    if (!dbState.salary_payments) dbState.salary_payments = [];
+    const staff = dbState.staff_users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    if (!staff) {
+      return { status: 'ERROR', message: `Staff member ${username} not found.` };
+    }
+
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const curDate = new Date();
+    const currentMonthYear = `${months[curDate.getMonth()]} ${curDate.getFullYear()}`;
+
+    const newPayment = {
+      payment_id: 'PAY' + String(dbState.salary_payments.length + 1).padStart(5, '0'),
+      user_id: staff.user_id,
+      username: staff.username,
+      amount: parseFloat(amount) || parseFloat(staff.monthly_salary) || 0,
+      month: currentMonthYear,
+      paid_at: new Date().toISOString(),
+      status: 'PAID',
+      ref_number: 'TXN' + Math.floor(100000000 + Math.random() * 900000000)
+    };
+
+    dbState.salary_payments.push(newPayment);
+    saveDb(dbState);
+    return { status: 'SUCCESS', data: newPayment, ref: newPayment.ref_number };
   }
 };
 
