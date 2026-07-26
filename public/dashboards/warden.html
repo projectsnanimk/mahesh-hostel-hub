@@ -34,10 +34,22 @@
         </p>
 
         <!-- Dynamic Laser Flash Visualizer -->
-        <div class="scan-visualizer" id="scanVisualizer">
-          <div class="scan-laser" id="scanLaser"></div>
-          <div style="font-size: 3rem; margin-bottom: 8px;">📷</div>
-          <div style="font-size: 0.95rem; font-weight:600; color: var(--text-staff-secondary);" id="scannerStatus">
+        <div class="scan-visualizer" id="scanVisualizer" style="height: auto; min-height: 250px; padding: 15px 15px 5px 15px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div class="scan-laser" id="scanLaser" style="z-index: 10; display: none;"></div>
+          
+          <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%;">
+            <!-- Static visual elements when camera is standby -->
+            <div id="visualizerStandbyContent" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+              <div style="font-size: 3rem; margin-bottom: 8px;">📷</div>
+            </div>
+            
+            <!-- Integrated Camera Viewport -->
+            <div id="cameraReaderContainer" style="display: none; width: 100%; max-width: 420px; border-radius: 8px; overflow: hidden; background: #000; position: relative; border: 2px solid rgba(255,255,255,0.06); box-shadow: 0 4px 12px rgba(0,0,0,0.4);">
+              <div id="cameraReader" style="width: 100%;"></div>
+            </div>
+          </div>
+          
+          <div id="scannerStatus" style="font-size: 0.85rem; font-weight: 700; color: var(--text-staff-secondary); padding: 8px; width: 100%; text-align: center; border-top: 1px dashed rgba(255,255,255,0.08); margin-top: 15px; z-index: 11;">
             Scanner Standby: Awaiting Input
           </div>
         </div>
@@ -46,12 +58,7 @@
         <div style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px;">
           <div style="display: flex; gap: 10px;">
             <button class="btn-submit" id="startCamBtn" onclick="startCameraScanner()" style="background: #0284c7; margin-top: 0; font-size: 0.95rem; flex: 1; font-weight:700;">📷 Open Live Camera Scanner</button>
-            <button class="btn-submit" id="stopCamBtn" onclick="stopCameraScanner()" style="background: #ef4444; margin-top: 0; font-size: 0.95rem; display: none; width: 120px; font-weight:700;">🛑 Stop Camera</button>
-          </div>
-          
-          <!-- Camera Feed Reader View -->
-          <div id="cameraReaderContainer" style="display: none; border: 2px solid var(--border-staff); border-radius: var(--radius-sm); overflow: hidden; background: #000; position: relative;">
-            <div id="cameraReader" style="width: 100%;"></div>
+            <button class="btn-submit" id="stopCamBtn" onclick="stopCameraScanner()" style="background: #ef4444; margin-top: 0; font-size: 0.95rem; display: none; width: 100%; font-weight:700;">🛑 Stop Camera</button>
           </div>
         </div>
 
@@ -161,11 +168,14 @@
     let html5QrcodeScanner = null;
 
     function startCameraScanner() {
+      document.getElementById('visualizerStandbyContent').style.display = 'none';
       document.getElementById('cameraReaderContainer').style.display = 'block';
+      document.getElementById('scanLaser').style.display = 'block';
       document.getElementById('startCamBtn').style.display = 'none';
       document.getElementById('stopCamBtn').style.display = 'block';
       
       statusText.innerText = "Camera Starting: Please grant permissions...";
+      statusText.style.color = "var(--text-staff-secondary)";
       
       html5QrcodeScanner = new Html5Qrcode("cameraReader");
       const config = { fps: 10, qrbox: { width: 220, height: 220 } };
@@ -207,7 +217,9 @@
     }
 
     function resetUIForStop() {
+      document.getElementById('visualizerStandbyContent').style.display = 'flex';
       document.getElementById('cameraReaderContainer').style.display = 'none';
+      document.getElementById('scanLaser').style.display = 'none';
       document.getElementById('startCamBtn').style.display = 'block';
       document.getElementById('stopCamBtn').style.display = 'none';
       statusText.innerText = "Scanner Standby: Awaiting Input";
